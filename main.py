@@ -1,6 +1,5 @@
 import gc
-import os
-import torch
+import torch as th
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -23,7 +22,6 @@ q_logvar_init = -5.
 
 # Define datasets and loaders
 digits = [0, 1, 2, 3, 4]
-transfer = [5, 6, 7, 8, 9]
 mnist_train = LimitedMNIST(root=MNIST, set_type="train", transform=lambda x: x.reshape(-1), digits=digits)
 mnist_val = LimitedMNIST(root=MNIST, set_type="validation", transform=lambda x: x.reshape(-1), digits=digits)
 mnist_test = LimitedMNIST(root=MNIST, set_type="test", transform=lambda x: x.reshape(-1), digits=digits)
@@ -37,61 +35,92 @@ file_logger = WeightLogger()
 print_logger = PrintLogger()
 
 # Define network
-model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=512, num_layers=2,
-               p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init)
+def train_model(digits=[0], fraction=1.0, pretrained=False):
+    mnist_train = LimitedMNIST(root=MNIST, set_type="train",
+                               transform=lambda x: x.reshape(-1), digits=digits, fraction=fraction)
 
-filename = 'normal_prior_qlogvar%0.1f_plogvar%0.1f_lr%0.5f_bs%i_ns%i' %\
-          (q_logvar_init, p_logvar_init, LR, loader_train.batch_size, N_SAMPLES)
+    mnist_val = LimitedMNIST(root=MNIST, set_type="validation",
+                             transform=lambda x: x.reshape(-1), digits=digits, fraction=fraction)
 
-file_logger.initialise(filename)
-print_logger.initialise(filename)
+    batch_size = 64
+    loader_train = DataLoader(mnist_train, batch_size=batch_size)
+    loader_val = DataLoader(mnist_val, batch_size=batch_size)
 
-# Create optimizer
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR)
 
-x = torch.FloatTensor(batch_size * N_SAMPLES, 784).fill_(0)
-y = torch.LongTensor(batch_size * N_SAMPLES).fill_(0)
+    model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=512, num_layers=2,
+                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init)
 
-if CUDA:
-    model.cuda()
-    x = x.cuda()
-    y = y.cuda()
+    filename = 'normal_prior_qlogvar%0.1f_plogvar%0.1f_lr%0.5f_bs%i_ns%i' %\
+              (q_logvar_init, p_logvar_init, LR, loader_train.batch_size, N_SAMPLES)
 
-def run_epoch(loader, MAP=False, is_training=False):
-    diagnostics = {}
-    nbatch_per_epoch = len(loader.dataset) // loader.batch_size
+    if type(pretrained) is str:
+        model.load_state_dict(torch.load(pretrained))
 
-    for i, (data, labels) in tqdm(enumerate(loader)):
-        # Repeat samples
-        x.copy_(data.repeat(N_SAMPLES, 1))
-        y.copy_(labels.repeat(N_SAMPLES, 0))
+    file_logger.initialise(filename)
+    print_logger.initialise(filename)
 
-        logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y),
-                                                   dataset_size=len(loader.dataset), MAP=MAP)
-        diagnostics = merge_add(diagnostics, _diagnostics)
+    # Create optimizer
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR)
 
-        if is_training:
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    if CUDA:
+        model.cuda()
 
-    diagnostics = merge_average(diagnostics, nbatch_per_epoch)
-    return diagnostics
+    def run_epoch(loader, MAP=False, is_training=False):
+        diagnostics = {}
+        nbatch_per_epoch = len(loader.dataset) // loader.batch_size
 
-diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP = [], [], []
+        for i, (data, labels) in tqdm(enumerate(loader)):
+            # Repeat samples
+            x = data.repeat(N_SAMPLES, 1)
+            y = labels.repeat(N_SAMPLES, 0)
 
-file_logger.dump(model, -1, None, p_logvar_init)
+            if CUDA:
+                x = x.cuda()
+                y = y.cuda()
 
-for epoch in range(NUM_EPOCHS):
-    diagnostics_batch_train += [run_epoch(loader_train, is_training=True)]
-    diagnostics_batch_valid += [run_epoch(loader_val)]
-    diagnostics_batch_valid_MAP += [run_epoch(loader_val, MAP=True)]
+            logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y),
+                                                       dataset_size=len(loader.dataset), MAP=MAP)
+            diagnostics = merge_add(diagnostics, _diagnostics)
 
-    diagnostics = [diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP]
+            if is_training:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-    if epoch % SAVE_EVERY == 0:
-        file_logger.dump(model, epoch, diagnostics, p_logvar_init)
+        diagnostics = merge_average(diagnostics, nbatch_per_epoch)
+        return diagnostics
 
-    print_logger.dump(epoch, diagnostics)
 
-    gc.collect()
+    diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP = [], [], []
+
+    file_logger.dump(model, -1, None, p_logvar_init)
+
+    for epoch in range(NUM_EPOCHS):
+        diagnostics_batch_train += [run_epoch(loader_train, is_training=True)]
+        diagnostics_batch_valid += [run_epoch(loader_val)]
+        diagnostics_batch_valid_MAP += [run_epoch(loader_val, MAP=True)]
+
+        batch_diagnostics = [diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP]
+
+        if epoch % SAVE_EVERY == 0:
+            file_logger.dump(model, epoch, batch_diagnostics, p_logvar_init)
+
+        print_logger.dump(epoch, batch_diagnostics)
+
+        gc.collect()
+
+    torch.save("pretrained.pth")
+
+
+digits = [0, 1, 2, 3, 4]
+transfer = [5, 6, 7, 8, 9]
+
+# Train the model on the whole data of digits
+train_model(digits, fraction=1.0)
+
+# Transfer to the second domain with the trained model
+train_model(transfer, fraction=0.1, pretrained="pretrained.pth")
+train_model(transfer, fraction=0.2, pretrained="pretrained.pth")
+train_model(transfer, fraction=0.25, pretrained="pretrained.pth")
+train_model(transfer, fraction=0.50, pretrained="pretrained.pth")
+train_model(transfer, fraction=1.0, pretrained="pretrained.pth")

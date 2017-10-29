@@ -24,7 +24,7 @@ class LimitedMNIST(data.Dataset):
         digits (list, optional): Digits to include in dataset.
     """
 
-    def __init__(self, root, set_type="train", transform=None, target_transform=None, digits=None):
+    def __init__(self, root, set_type="train", transform=None, target_transform=None, digits=None, fraction=1.0):
         self.transform = transform
         self.target_transform = target_transform
 
@@ -38,8 +38,8 @@ class LimitedMNIST(data.Dataset):
         self.mnist.target = self.mnist.target[indices]
 
         if set_type is "train":
-            self.mnist.data = self.mnist.data[:40000]
-            self.mnist.target = self.mnist.target[:40000]
+            self.mnist.data = self.mnist.data[:int(40000*fraction)]
+            self.mnist.target = self.mnist.target[:int(40000*fraction)]
         elif set_type is "validation":
             self.mnist.data = self.mnist.data[40000:]
             self.mnist.target = self.mnist.target[40000:]
@@ -91,9 +91,9 @@ class OMNIGLOT(data.Dataset):
     - transform: how to transform the input
     - target_transform: how to transform the target
     - download: need to download the dataset
-    
+
     Usage:
-    
+
     class FilenameToTensor(object):
         """
         Load a PIL RGB Image from a filename.
@@ -104,7 +104,7 @@ class OMNIGLOT(data.Dataset):
             img.thumbnail((28, 28), Image.ANTIALIAS)
             img = np.array(img).reshape(-1).astype(np.float32)
             return torch.FloatTensor(img)
-    
+
     omniglot = OMNIGLOT("./", download=True, transform=FilenameToTensor())
     '''
     def __init__(self, root, transform=None, target_transform=None, download=False):
