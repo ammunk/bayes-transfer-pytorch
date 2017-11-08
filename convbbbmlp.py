@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 from collections import defaultdict
 
+from torchvision.models.squeezenet import Fire
+
 from distributions import Normal, distribution_selector
 
 
@@ -75,13 +77,21 @@ class BBBLinearFactorial(nn.Module):
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
 
-
-class BBBMLP(nn.Module):
-    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5):
+class BBBCNN(nn.Module):
+    def __init__(self, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5):
         # create a simple MLP model with probabilistic weights
-        super(BBBMLP, self).__init__()
+        super(BBBCNN, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=3, stride=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
+            nn.Conv2d(64, 32, kernel_size=3, stride=2),
+            nn.ReLU(inplace=True)
+        )
+
         layers = [
-            BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
+            BBBLinearFactorial(32*2*2, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
                                q_logvar_init=q_logvar_init), nn.ELU()]
         for i in range(num_layers - 1):
             layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
@@ -96,6 +106,8 @@ class BBBMLP(nn.Module):
     def probforward(self, x, MAP=False):
         diagnostics = defaultdict(list)
         kl = 0
+        x = self.features(x)
+        x = x.view(-1, 32*2*2)
         for layer in self.layers:
             if hasattr(layer, 'probforward') and callable(layer.probforward):
                 # Get intermediate diagnostics

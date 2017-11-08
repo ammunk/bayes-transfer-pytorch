@@ -42,12 +42,12 @@ class OMNIGLOT(data.Dataset):
             raise RuntimeError('Dataset not found.'
                                + ' You can use download=True to download it')
 
-        self.all_items=find_classes(os.path.join(self.root, self.processed_folder))
-        self.idx_classes=index_classes(self.all_items)
+        self.all_items = find_classes(os.path.join(self.root, self.processed_folder))
+        self.idx_classes = index_classes(self.all_items)
 
     def __getitem__(self, index):
         filename=self.all_items[index][0]
-        img=str.join('/',[self.all_items[index][2],filename])
+        img=str.join('/', [self.all_items[index][2],filename])
 
         target=self.idx_classes[self.all_items[index][1]]
         if self.transform is not None:
@@ -55,7 +55,7 @@ class OMNIGLOT(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return  img,target
+        return img, target
 
     def __len__(self):
         return len(self.all_items)
