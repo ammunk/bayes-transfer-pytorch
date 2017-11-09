@@ -113,12 +113,12 @@ transfer = [5, 6, 7, 8, 9]
 #train_model("cnn_original", digits, fraction=1.0)
 
 # Transfer to the second domain with the trained model
-train_model("cnn_domain0.05", transfer, fraction=0.05, pretrained=False)
-train_model("cnn_domain0.1", transfer, fraction=0.1, pretrained=False)
-train_model("cnn_domain0.2", transfer, fraction=0.2, pretrained=False)
-train_model("cnn_domain0.3", transfer, fraction=0.3, pretrained=False)
-train_model("cnn_domain0.5", transfer, fraction=0.5, pretrained=False)
-train_model("cnn_domain1", transfer, fraction=1.0, pretrained=False)
+#train_model("cnn_domain0.05", transfer, fraction=0.05, pretrained=False)
+#train_model("cnn_domain0.1", transfer, fraction=0.1, pretrained=False)
+#train_model("cnn_domain0.2", transfer, fraction=0.2, pretrained=False)
+#train_model("cnn_domain0.3", transfer, fraction=0.3, pretrained=False)
+#train_model("cnn_domain0.5", transfer, fraction=0.5, pretrained=False)
+#train_model("cnn_domain1", transfer, fraction=1.0, pretrained=False)
 
 # Transfer
 train_model("transfer_cnn_domain0.05", transfer, fraction=0.05, pretrained=True)
