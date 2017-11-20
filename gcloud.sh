@@ -71,6 +71,7 @@ conda install -y numpy pyyaml mkl setuptools cmake cffi
 
 # Add LAPACK support for the GPU
 conda install -y -c soumith magma-cuda80 # or magma-cuda75 if CUDA 7.5
+conda install -y tqdm
 
 # Download master branch of PyTorch
 git clone --recursive https://github.com/pytorch/pytorch
@@ -80,3 +81,11 @@ cd pytorch
 python setup.py install
 
 cd ..
+
+source .profile
+
+conda create -n torch --clone="/home/$USER/anaconda3"
+source activate torch
+
+conda install -y tqdm
+pip install torchvision
