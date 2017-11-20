@@ -6,10 +6,11 @@ from torch.nn import Parameter
 from collections import defaultdict
 
 from distributions import Normal, distribution_selector
+from normflow import PlanarNormalizingFlow
 
 
 class BBBLinearFactorial(nn.Module):
-    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5):
+    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5, normflow=False):
         # p_logvar_init, p_pi can be either
         #    (list/tuples): prior model is a mixture of gaussians components=len(p_pi)=len(p_logvar_init)
         #    float: Gussian distribution
@@ -20,6 +21,10 @@ class BBBLinearFactorial(nn.Module):
         self.out_features  = out_features
         self.p_logvar_init = p_logvar_init
         self.q_logvar_init = q_logvar_init
+
+        self.normflow = normflow
+        self.normalizing_flow_w = PlanarNormalizingFlow(in_features)
+        self.normalizing_flow_b = PlanarNormalizingFlow(in_features)
 
         # Approximate Posterior model
         self.qw_mean   = Parameter(torch.Tensor(out_features, in_features))
@@ -59,8 +64,18 @@ class BBBLinearFactorial(nn.Module):
             w_sample = self.qw.sample()
             b_sample = self.qb.sample()
 
-        kl_w = torch.sum(self.qw.logpdf(w_sample) - self.pw.logpdf(w_sample))
-        kl_b = torch.sum(self.qb.logpdf(b_sample) - self.pb.logpdf(b_sample))
+        if self.normflow:
+            f_w_sample, log_det_w = zip(*[self.normalizing_flow_w(w) for w in w_sample])
+            f_b_sample, log_det_b = self.normalizing_flow_b(b_sample)
+
+            qw_logpdf = self.qw.logpdf(f_w_sample) + log_det_w
+            qb_logpdf = self.qb.logpdf(f_b_sample) + log_det_b
+        else:
+            qw_logpdf = self.qw.logpdf(w_sample)
+            qb_logpdf = self.qb.logpdf(b_sample)
+
+        kl_w = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
+        kl_b = torch.sum(qb_logpdf - self.pb.logpdf(b_sample))
         kl = kl_w + kl_b
 
         diagnostics = {'kl_w': kl_w.data.mean(), 'kl_b': kl_b.data.mean(),
@@ -77,18 +92,19 @@ class BBBLinearFactorial(nn.Module):
 
 
 class BBBMLP(nn.Module):
-    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5):
+    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5,
+                 normflow=False):
         # create a simple MLP model with probabilistic weights
         super(BBBMLP, self).__init__()
         layers = [
             BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init), nn.ELU()]
+                               q_logvar_init=q_logvar_init, normflow=normflow), nn.ELU()]
         for i in range(num_layers - 1):
             layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
-                                          p_pi=p_pi, q_logvar_init=q_logvar_init), nn.ELU()]
+                                          p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow), nn.ELU()]
         layers += [
             BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init)]
+                               q_logvar_init=q_logvar_init, normflow=normflow)]
 
         self.layers = nn.ModuleList(layers)
         self.loss = nn.CrossEntropyLoss()

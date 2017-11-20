@@ -42,8 +42,8 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
     loader_train = DataLoader(mnist_train, batch_size=batch_size, num_workers=2)
     loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2)
 
-    model = BBBCNN(num_class=len(digits), num_hidden=512, num_layers=2,
-                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init)
+    model = BBBMLP(28*28, num_class=len(digits), num_hidden=512, num_layers=2,
+                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, normflow=True)
 
     if pretrained:
         path = "cnn_original/weights/model_epoch49.pkl"
@@ -110,7 +110,7 @@ digits = [0, 1, 2, 3, 4]
 transfer = [5, 6, 7, 8, 9]
 
 # Train the model on the whole data of digits
-#train_model("cnn_original", digits, fraction=1.0)
+train_model("norm_flow_original", digits, fraction=1.0)
 
 # Transfer to the second domain with the trained model
 #train_model("cnn_domain0.05", transfer, fraction=0.05, pretrained=False)
@@ -121,12 +121,12 @@ transfer = [5, 6, 7, 8, 9]
 #train_model("cnn_domain1", transfer, fraction=1.0, pretrained=False)
 
 # Transfer
-train_model("transfer_cnn_domain0.05", transfer, fraction=0.05, pretrained=True)
-train_model("transfer_cnn_domain0.1", transfer, fraction=0.1, pretrained=True)
-train_model("transfer_cnn_domain0.2", transfer, fraction=0.2, pretrained=True)
-train_model("transfer_cnn_domain0.3", transfer, fraction=0.3, pretrained=True)
-train_model("transfer_cnn_domain0.5", transfer, fraction=0.5, pretrained=True)
-train_model("transfer_cnn_domain1", transfer, fraction=1.0, pretrained=True)
+#train_model("transfer_cnn_domain0.05", transfer, fraction=0.05, pretrained=True)
+#train_model("transfer_cnn_domain0.1", transfer, fraction=0.1, pretrained=True)
+#train_model("transfer_cnn_domain0.2", transfer, fraction=0.2, pretrained=True)
+#train_model("transfer_cnn_domain0.3", transfer, fraction=0.3, pretrained=True)
+#train_model("transfer_cnn_domain0.5", transfer, fraction=0.5, pretrained=True)
+#train_model("transfer_cnn_domain1", transfer, fraction=1.0, pretrained=True)
 
 
 
