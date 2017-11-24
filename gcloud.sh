@@ -82,7 +82,7 @@ python setup.py install
 
 cd ..
 
-source ~.profile
+source ~/.profile
 
 conda create -n torch --clone="/home/$USER/anaconda3"
 source activate torch
