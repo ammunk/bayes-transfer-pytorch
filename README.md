@@ -29,7 +29,7 @@ can SSH into, for example:
 ssh -i ~/.ssh/id_rsa 'your-username-for-the-key'@'external-ip'
 ```
 
-When inside the machine, after cloning the repository you will need to run
+When inside the machine, after cloning the repository, and being in the folder bayes_02456, you will need to run
 the install script to get CUDA 8 and PyTorch.
 
 ```
