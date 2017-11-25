@@ -15,10 +15,10 @@ the learnt posterior as a prior.
 ## How to run on Google Compute Engine
 
 After creating a project go to **VM instances** and create a new instance.
-For machine type choose atleast 2 CPU cores and 6 GB of memory and choose
+For machine type choose atleast 4 CPU cores and 16 GB of memory and choose
 the number of GPUs under advanced settings - 1 K80 will usually do.
 
-For boot disk choose Ubuntu 16.04 LTS and increase the disk size to atleast 30 GB.
+For boot disk choose Ubuntu 14.04 and increase the disk size to atleast 40 GB.
 If you do not have any project wide SSH-keys, you will need to add them inside the
 management tab by copy-pasting your public key.
 
