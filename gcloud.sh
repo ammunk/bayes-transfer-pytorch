@@ -69,23 +69,6 @@ export CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" # [anaconda root direct
 # Install basic dependencies
 conda install -y numpy pyyaml mkl setuptools cmake cffi
 
-# Add LAPACK support for the GPU
-conda install -y -c soumith magma-cuda80 # or magma-cuda75 if CUDA 7.5
+# Install PyTorch
+conda install -y -c soumith pytorch torchvision cuda80 # or magma-cuda75 if CUDA 7.5
 conda install -y tqdm
-
-# Download master branch of PyTorch
-git clone --recursive https://github.com/pytorch/pytorch
-
-# Install
-cd pytorch
-python setup.py install
-
-cd ..
-
-source ~/.profile
-
-conda create -n torch --clone="/home/$USER/anaconda3"
-source activate torch
-
-conda install -y tqdm
-pip install torchvision
