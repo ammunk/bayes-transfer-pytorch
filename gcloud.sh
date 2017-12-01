@@ -11,10 +11,10 @@ echo "Checking for CUDA and installing."
 # Check for CUDA and try to install.
 if ! dpkg-query -W cuda-8-0; then
   # The 16.04 installer works with 16.10.
-  curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
-  dpkg -i ./cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
-  apt-get update
-  apt-get install cuda-8-0 -y
+  sudo curl -O http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+  sudo dpkg -i ./cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+  sudo apt-get update
+  sudo apt-get install cuda-8-0 -y
 fi
 
 #########################################################################
@@ -69,23 +69,6 @@ export CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" # [anaconda root direct
 # Install basic dependencies
 conda install -y numpy pyyaml mkl setuptools cmake cffi
 
-# Add LAPACK support for the GPU
-conda install -y -c soumith magma-cuda80 # or magma-cuda75 if CUDA 7.5
+# Install PyTorch
+conda install -y -c soumith pytorch torchvision cuda80 # or magma-cuda75 if CUDA 7.5
 conda install -y tqdm
-
-# Download master branch of PyTorch
-git clone --recursive https://github.com/pytorch/pytorch
-
-# Install
-cd pytorch
-python setup.py install
-
-cd ..
-
-source .profile
-
-conda create -n torch --clone="/home/$USER/anaconda3"
-source activate torch
-
-conda install -y tqdm
-pip install torchvision
