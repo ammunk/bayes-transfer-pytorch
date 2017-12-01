@@ -23,8 +23,8 @@ class BBBLinearFactorial(nn.Module):
         self.q_logvar_init = q_logvar_init
 
         self.normflow = normflow
-        self.normalizing_flow_w = PlanarNormalizingFlow(in_features)
-        self.normalizing_flow_b = PlanarNormalizingFlow(in_features)
+        self.normalizing_flow_w = PlanarNormalizingFlow(in_features*out_features)
+        self.normalizing_flow_b = PlanarNormalizingFlow(out_features)
 
         # Approximate Posterior model
         self.qw_mean   = Parameter(torch.Tensor(out_features, in_features))
@@ -65,14 +65,22 @@ class BBBLinearFactorial(nn.Module):
             b_sample = self.qb.sample()
 
         if self.normflow:
-            f_w_sample, log_det_w = zip(*[self.normalizing_flow_w(w) for w in w_sample])
+            f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(-1))
+            f_w_sample = f_w_sample.view(w_sample.size())
             f_b_sample, log_det_b = self.normalizing_flow_b(b_sample)
 
-            qw_logpdf = self.qw.logpdf(f_w_sample) + log_det_w
-            qb_logpdf = self.qb.logpdf(f_b_sample) + log_det_b
+            # Subtracting log det J is the same as multiplying by 1/(det J)
+            qw_logpdf = self.qw.logpdf(f_w_sample)
+            qw_logpdf -= log_det_w.view(-1, 1).expand_as(qw_logpdf)
+
+            qb_logpdf = self.qb.logpdf(f_b_sample)
+            qb_logpdf -= log_det_b.expand_as(qb_logpdf)
         else:
             qw_logpdf = self.qw.logpdf(w_sample)
             qb_logpdf = self.qb.logpdf(b_sample)
+
+            f_w_sample = w_sample
+            f_b_sample = b_sample
 
         kl_w = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
         kl_b = torch.sum(qb_logpdf - self.pb.logpdf(b_sample))
@@ -81,7 +89,7 @@ class BBBLinearFactorial(nn.Module):
         diagnostics = {'kl_w': kl_w.data.mean(), 'kl_b': kl_b.data.mean(),
                        'Hq_w': self.qw.entropy().data.mean(),
                        'Hq_b': self.qb.entropy().data.mean()}  # Hq_w and Hq_b are the differential entropy
-        output = F.linear(input, w_sample, b_sample)
+        output = F.linear(input, f_w_sample, f_b_sample)
 
         return output, kl, diagnostics
 
