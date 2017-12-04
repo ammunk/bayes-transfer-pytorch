@@ -61,9 +61,9 @@ class WeightLogger(Logger):
         N = norm(loc=0, scale=np.exp(p_logvar_init))
         x = np.linspace(-0.5, 0.5, 100)
         W = torch.cat([model.layers[0].qw_mean.view(-1), model.layers[2].qw_mean.view(-1),
-                       model.layers[4].qw_mean.view(-1)]).data.cpu().numpy()
+                       ]).data.cpu().numpy()
         b = torch.cat([model.layers[0].qb_mean.view(-1), model.layers[2].qb_mean.view(-1),
-                       model.layers[4].qb_mean.view(-1)]).data.cpu().numpy()
+                       ]).data.cpu().numpy()
 
         plt.figure(figsize=(10, 5))
         plt.subplot(121)
