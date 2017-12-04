@@ -6,7 +6,7 @@ from torch.nn import Parameter
 from collections import defaultdict
 
 from distributions import Normal, distribution_selector
-from normflow import PlanarNormalizingFlow
+from normflow import PlanarNormalizingFlow, NormalizingFlowLayer
 
 
 class BBBLinearFactorial(nn.Module):
@@ -23,8 +23,8 @@ class BBBLinearFactorial(nn.Module):
         self.q_logvar_init = q_logvar_init
 
         self.normflow = normflow
-        self.normalizing_flow_w = PlanarNormalizingFlow(in_features*out_features)
-        self.normalizing_flow_b = PlanarNormalizingFlow(out_features)
+        self.normalizing_flow_w = NormalizingFlowLayer(n=16, features=in_features*out_features)
+        self.normalizing_flow_b = NormalizingFlowLayer(n=16, features=out_features)
 
         # Approximate Posterior model
         self.qw_mean   = Parameter(torch.Tensor(out_features, in_features))
@@ -65,16 +65,14 @@ class BBBLinearFactorial(nn.Module):
             b_sample = self.qb.sample()
 
         if self.normflow:
-            f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(-1))
+            f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(1, -1))
             f_w_sample = f_w_sample.view(w_sample.size())
-            f_b_sample, log_det_b = self.normalizing_flow_b(b_sample)
+            f_b_sample, log_det_b = self.normalizing_flow_b(b_sample.view(1, -1))
+            f_b_sample = f_b_sample.view(b_sample.size())
 
             # Subtracting log det J is the same as multiplying by 1/(det J)
-            qw_logpdf = self.qw.logpdf(f_w_sample)
-            qw_logpdf -= log_det_w.view(-1, 1).expand_as(qw_logpdf)
-
-            qb_logpdf = self.qb.logpdf(f_b_sample)
-            qb_logpdf -= log_det_b.expand_as(qb_logpdf)
+            qw_logpdf = self.qw.logpdf(w_sample) - sum(log_det_w)
+            qb_logpdf = self.qb.logpdf(b_sample) - sum(log_det_b)
         else:
             qw_logpdf = self.qw.logpdf(w_sample)
             qb_logpdf = self.qb.logpdf(b_sample)
@@ -82,8 +80,8 @@ class BBBLinearFactorial(nn.Module):
             f_w_sample = w_sample
             f_b_sample = b_sample
 
-        kl_w = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
-        kl_b = torch.sum(qb_logpdf - self.pb.logpdf(b_sample))
+        kl_w = torch.sum(qw_logpdf - self.pw.logpdf(f_w_sample))
+        kl_b = torch.sum(qb_logpdf - self.pb.logpdf(f_b_sample))
         kl = kl_w + kl_b
 
         diagnostics = {'kl_w': kl_w.data.mean(), 'kl_b': kl_b.data.mean(),
@@ -110,9 +108,8 @@ class BBBMLP(nn.Module):
         for i in range(num_layers - 1):
             layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
                                           p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow), nn.ELU()]
-        layers += [
-            BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init, normflow=normflow)]
+        layers += [BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init,
+                                p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow)]
 
         self.layers = nn.ModuleList(layers)
         self.loss = nn.CrossEntropyLoss()

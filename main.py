@@ -16,7 +16,7 @@ from loggers import PrintLogger, WeightLogger
 cuda        = torch.cuda.is_available()
 NUM_EPOCHS  = 50
 SAVE_EVERY  = 9
-N_SAMPLES   = 16
+N_SAMPLES   = 1
 LR          = 1e-3
 MNIST       = "./"
 
@@ -25,6 +25,8 @@ q_logvar_init = -5.
 
 file_logger = WeightLogger()
 print_logger = PrintLogger()
+
+normflow = True
 
 # Define network
 def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
@@ -37,11 +39,11 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
                              digits=digits, fraction=fraction)
 
     batch_size = 64
-    loader_train = DataLoader(mnist_train, batch_size=batch_size, num_workers=2)
-    loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2)
+    loader_train = DataLoader(mnist_train, batch_size=batch_size, num_workers=2, pin_memory=cuda)
+    loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2, pin_memory=cuda)
 
-    model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=512, num_layers=2,
-                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, normflow=True)
+    model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=100, num_layers=2,
+                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, normflow=normflow)
 
     if pretrained:
         path = "original/weights/model_epoch49.pkl"
