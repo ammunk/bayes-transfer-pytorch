@@ -6,11 +6,11 @@ from torch.nn import Parameter
 from collections import defaultdict
 
 from distributions import Normal, distribution_selector
-from normflow import PlanarNormalizingFlow, NormalizingFlowLayer
+from normflow import NormalizingFlows
 
 
 class BBBLinearFactorial(nn.Module):
-    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5, normflow=False):
+    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5, nflows=0):
         # p_logvar_init, p_pi can be either
         #    (list/tuples): prior model is a mixture of gaussians components=len(p_pi)=len(p_logvar_init)
         #    float: Gussian distribution
@@ -22,9 +22,9 @@ class BBBLinearFactorial(nn.Module):
         self.p_logvar_init = p_logvar_init
         self.q_logvar_init = q_logvar_init
 
-        self.normflow = normflow
-        self.normalizing_flow_w = NormalizingFlowLayer(n=16, features=in_features*out_features)
-        self.normalizing_flow_b = NormalizingFlowLayer(n=16, features=out_features)
+        self.nflows = nflows
+        self.normalizing_flow_w = NormalizingFlows(n=self.nflows, features=in_features*out_features)
+        self.normalizing_flow_b = NormalizingFlows(n=self.nflows, features=out_features)
 
         # Approximate Posterior model
         self.qw_mean   = Parameter(torch.Tensor(out_features, in_features))
@@ -64,7 +64,7 @@ class BBBLinearFactorial(nn.Module):
             w_sample = self.qw.sample()
             b_sample = self.qb.sample()
 
-        if self.normflow:
+        if self.nflows > 1:
             f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(1, -1))
             f_w_sample = f_w_sample.view(w_sample.size())
             f_b_sample, log_det_b = self.normalizing_flow_b(b_sample.view(1, -1))
@@ -99,15 +99,15 @@ class BBBLinearFactorial(nn.Module):
 
 class BBBMLP(nn.Module):
     def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5,
-                 normflow=False):
+                 nflows=0):
         # create a simple MLP model with probabilistic weights
         super(BBBMLP, self).__init__()
         layers = [
             BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init, normflow=normflow), nn.ELU()]
+                               q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
         for i in range(num_layers - 1):
             layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
-                                          p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow), nn.ELU()]
+                                          p_pi=p_pi, q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
         layers += [nn.Linear(num_hidden, num_class)]
         #layers += [BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init,
         #                        p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow)]

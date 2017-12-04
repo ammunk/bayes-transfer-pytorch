@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class NormalizingFlowLayer(nn.Module):
+class NormalizingFlows(nn.Module):
     def __init__(self, n, features):
-        super(NormalizingFlowLayer, self).__init__()
+        super(NormalizingFlows, self).__init__()
         flows = [PlanarNormalizingFlow(features) for _ in range(n)]
         self.flows = nn.ModuleList(flows)
 

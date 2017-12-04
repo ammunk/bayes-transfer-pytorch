@@ -26,7 +26,7 @@ q_logvar_init = -5.
 file_logger = WeightLogger()
 print_logger = PrintLogger()
 
-normflow = True
+number_of_flows = 16
 
 # Define network
 def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
@@ -43,7 +43,7 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
     loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2, pin_memory=cuda)
 
     model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=100, num_layers=2,
-                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, normflow=normflow)
+                   p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, nflows=number_of_flows)
 
     if pretrained:
         path = "original/weights/model_epoch49.pkl"
