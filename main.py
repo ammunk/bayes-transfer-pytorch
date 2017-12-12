@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from auxiliary import merge_add, merge_average
 from bbbmlp import BBBMLP
-from convbbbmlp import BBBCNN
 from datasets import LimitedMNIST
 from loggers import PrintLogger, WeightLogger
 
@@ -26,21 +25,19 @@ q_logvar_init = -5.
 file_logger = WeightLogger()
 print_logger = PrintLogger()
 
-number_of_flows = 16
+number_of_flows = 0
 
 # Define network
 def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
-    mnist_train = LimitedMNIST(root=MNIST, set_type="train", transform=lambda x: x.reshape(-1, 28, 28),
-                               target_transform=lambda x: x - min(digits),
+    mnist_train = LimitedMNIST(root=MNIST, set_type="train", target_transform=lambda x: x - min(digits),
                                digits=digits, fraction=fraction)
 
-    mnist_val = LimitedMNIST(root=MNIST, set_type="validation", transform=lambda x: x.reshape(-1, 28, 28),
-                             target_transform=lambda x: x - min(digits),
+    mnist_val = LimitedMNIST(root=MNIST, set_type="validation", target_transform=lambda x: x - min(digits),
                              digits=digits, fraction=fraction)
 
-    batch_size = 64
-    loader_train = DataLoader(mnist_train, batch_size=batch_size, num_workers=2, pin_memory=cuda)
-    loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2, pin_memory=cuda)
+    batch_size = 100
+    loader_train = DataLoader(mnist_train, batch_size=int(batch_size*fraction), num_workers=2, pin_memory=cuda)
+    loader_val = DataLoader(mnist_val, batch_size=int(batch_size*fraction), num_workers=2, pin_memory=cuda)
 
     model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=100, num_layers=2,
                    p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, nflows=number_of_flows)
@@ -49,6 +46,9 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
         path = "original/weights/model_epoch49.pkl"
         d = pickle.load(open(path, "rb"))
         model.load_state_dict(d)
+        model.resetprediction()
+
+    print(model)
 
     file_logger.initialise(filename)
     print_logger.initialise(filename)
@@ -61,7 +61,7 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
 
     def run_epoch(loader, MAP=False, is_training=False):
         diagnostics = {}
-        nbatch_per_epoch = len(loader.dataset) // loader.batch_size
+        nbatch_per_epoch = len(loader.dataset) / loader.batch_size
 
         for i, (data, labels) in tqdm(enumerate(loader)):
             # Repeat samples
@@ -74,7 +74,8 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
                 y = y.cuda()
 
             logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y),
-                                                       dataset_size=len(loader.dataset), MAP=MAP)
+                                                       dataset_size=nbatch_per_epoch, MAP=MAP)
+
             diagnostics = merge_add(diagnostics, _diagnostics)
 
             if is_training:
@@ -82,7 +83,7 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
                 loss.backward()
                 optimizer.step()
 
-        diagnostics = merge_average(diagnostics, nbatch_per_epoch)
+        diagnostics = merge_average(diagnostics, i+1)
         return diagnostics
 
 
@@ -108,23 +109,23 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
 
 ###### Parameters for experiment ######
 
-digits = [0, 1, 2, 3, 4]
-transfer = [5, 6, 7, 8, 9]
+digits = [1, 2]
+transfer = [7, 8]
 
 # Train the model on the whole data of digits
 train_model("original", digits, fraction=1.0)
-
-#train_model("domain0.05", transfer, fraction=0.05, pretrained=False)
-#train_model("domain0.1", transfer, fraction=0.1, pretrained=False)
-#train_model("domain0.2", transfer, fraction=0.2, pretrained=False)
-#train_model("domain0.3", transfer, fraction=0.3, pretrained=False)
-#train_model("domain0.5", transfer, fraction=0.5, pretrained=False)
-#train_model("domain1", transfer, fraction=1.0, pretrained=False)
+#
+train_model("domain0.05", transfer, fraction=0.05, pretrained=False)
+train_model("domain0.1", transfer, fraction=0.1, pretrained=False)
+train_model("domain0.2", transfer, fraction=0.2, pretrained=False)
+train_model("domain0.3", transfer, fraction=0.3, pretrained=False)
+train_model("domain0.5", transfer, fraction=0.5, pretrained=False)
+train_model("domain1", transfer, fraction=1.0, pretrained=False)
 
 # Transfer to the second domain with the trained model
-#train_model("transfer_domain0.05", transfer, fraction=0.05, pretrained=True)
-#train_model("transfer_domain0.1", transfer, fraction=0.1, pretrained=True)
-#train_model("transfer_domain0.2", transfer, fraction=0.2, pretrained=True)
-#train_model("transfer_domain0.3", transfer, fraction=0.3, pretrained=True)
-#train_model("transfer_domain0.5", transfer, fraction=0.5, pretrained=True)
-#train_model("transfer_domain1", transfer, fraction=1.0, pretrained=True)
+train_model("transfer_domain0.05", transfer, fraction=0.05, pretrained=True)
+train_model("transfer_domain0.1", transfer, fraction=0.1, pretrained=True)
+train_model("transfer_domain0.2", transfer, fraction=0.2, pretrained=True)
+train_model("transfer_domain0.3", transfer, fraction=0.3, pretrained=True)
+train_model("transfer_domain0.5", transfer, fraction=0.5, pretrained=True)
+train_model("transfer_domain1", transfer, fraction=1.0, pretrained=True)
