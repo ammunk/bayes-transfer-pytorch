@@ -1,5 +1,6 @@
 import gc
 import pickle
+import os
 
 import torch
 from torch.autograd import Variable
@@ -26,10 +27,11 @@ q_logvar_init = -5.
 file_logger = WeightLogger()
 print_logger = PrintLogger()
 
-number_of_flows = 16
+number_of_flows = 0
 
 # Define network
-def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
+def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False):
+    filename	= filename + extension
     mnist_train = LimitedMNIST(root=MNIST, set_type="train", transform=lambda x: x.reshape(-1, 28, 28),
                                target_transform=lambda x: x - min(digits),
                                digits=digits, fraction=fraction)
@@ -44,9 +46,9 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
 
     model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=100, num_layers=2,
                    p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, nflows=number_of_flows)
-
+		
     if pretrained:
-        path = "original/weights/model_epoch49.pkl"
+        path = "results/original"+ extension + "/weights/model_epoch49.pkl"
         d = pickle.load(open(path, "rb"))
         model.load_state_dict(d)
 
@@ -83,7 +85,7 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
                 optimizer.step()
 
         diagnostics = merge_average(diagnostics, nbatch_per_epoch)
-        return diagnostics
+        return diagnostics 
 
 
     diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP = [], [], []
@@ -107,24 +109,29 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
     file_logger.dump(model, epoch, batch_diagnostics, p_logvar_init)
 
 ###### Parameters for experiment ######
-
-digits = [0, 1, 2, 3, 4]
-transfer = [5, 6, 7, 8, 9]
-
+use_all = False
+if use_all:
+	digits = [0, 1, 2, 3, 4]
+	transfer = [5, 6, 7, 8, 9]
+	name_ext	= "all"
+else:
+	digits = [3]
+	transfer = [8]
+	name_ext = "two"
 # Train the model on the whole data of digits
-train_model("original", digits, fraction=1.0)
+train_model("results/original", name_ext, digits, fraction=1.0)
 
-#train_model("domain0.05", transfer, fraction=0.05, pretrained=False)
-#train_model("domain0.1", transfer, fraction=0.1, pretrained=False)
-#train_model("domain0.2", transfer, fraction=0.2, pretrained=False)
-#train_model("domain0.3", transfer, fraction=0.3, pretrained=False)
-#train_model("domain0.5", transfer, fraction=0.5, pretrained=False)
-#train_model("domain1", transfer, fraction=1.0, pretrained=False)
+train_model("results/domain0.05", name_ext, transfer, fraction=0.05, pretrained=False)
+train_model("results/domain0.1", name_ext, transfer, fraction=0.1, pretrained=False)
+train_model("results/domain0.2", name_ext, transfer, fraction=0.2, pretrained=False)
+train_model("results/domain0.3", name_ext, transfer, fraction=0.3, pretrained=False)
+train_model("results/domain0.5", name_ext, transfer, fraction=0.5, pretrained=False)
+train_model("results/domain1", name_ext, transfer, fraction=1.0, pretrained=False)
 
 # Transfer to the second domain with the trained model
-#train_model("transfer_domain0.05", transfer, fraction=0.05, pretrained=True)
-#train_model("transfer_domain0.1", transfer, fraction=0.1, pretrained=True)
-#train_model("transfer_domain0.2", transfer, fraction=0.2, pretrained=True)
-#train_model("transfer_domain0.3", transfer, fraction=0.3, pretrained=True)
-#train_model("transfer_domain0.5", transfer, fraction=0.5, pretrained=True)
-#train_model("transfer_domain1", transfer, fraction=1.0, pretrained=True)
+train_model("results/transfer_domain0.05", name_ext, transfer, fraction=0.05, pretrained=True)
+train_model("results/transfer_domain0.1", name_ext, transfer, fraction=0.1, pretrained=True)
+train_model("results/transfer_domain0.2", name_ext, transfer, fraction=0.2, pretrained=True)
+train_model("results/transfer_domain0.3", name_ext, transfer, fraction=0.3, pretrained=True)
+train_model("results/transfer_domain0.5", name_ext, transfer, fraction=0.5, pretrained=True)
+train_model("results/transfer_domain1", name_ext, transfer, fraction=1.0, pretrained=True)
