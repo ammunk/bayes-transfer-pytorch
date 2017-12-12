@@ -25,21 +25,22 @@ else:
 
 train, valid, MAP = load_data("transfer_domain", i, n_digits)
 
-#plt.plot(i, train, label=r"Train, prior: $q(w \mid \theta)$", color="#9c209b")
+plt.plot(i, train, label=r"Train, prior: $q(w \mid \theta)$", color="#9c209b")
 plt.plot(i, valid, "--", label=r"Validation, prior: $q(w \mid \theta)$", color="#d534d3")
-plt.plot(i, MAP, "--", label=r"MAP, prior: $q(w \mid \theta)$", color="#e273e1")
+#plt.plot(i, MAP, "--", label=r"MAP, prior: $q(w \mid \theta)$", color="#e273e1")
 
 train, valid, MAP = load_data("domain", i, n_digits)
 
-#plt.plot(i, train, label=r"Train, prior: $\mathcal{U}(a, b)$", color="#209c22")
+plt.plot(i, train, label=r"Train, prior: $\mathcal{U}(a, b)$", color="#209c22")
 plt.plot(i, valid, "--", label=r"Validation, prior: $\mathcal{U}(a, b)$", color="#34d536")
-plt.plot(i, MAP, "--", label=r"MAP, prior: $\mathcal{U}(a, b)$", color="#73e275")
+#plt.plot(i, MAP, "--", label=r"MAP, prior: $\mathcal{U}(a, b)$", color="#73e275")
 
 plt.xlabel("Size of transfer dataset")
 plt.ylabel("Accuracy")
 plt.xticks(i, map(lambda x: "{}%".format(int(x*100)), i))
 f.suptitle("Accuracy after training for 50 epochs")
 plt.legend()
+
 
 plt.savefig("figs/" + n_digits + "result.pdf")
 

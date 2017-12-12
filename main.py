@@ -9,7 +9,6 @@ from tqdm import tqdm
 
 from auxiliary import merge_add, merge_average
 from bbbmlp import BBBMLP
-from convbbbmlp import BBBCNN
 from datasets import LimitedMNIST
 from loggers import PrintLogger, WeightLogger
 
@@ -36,13 +35,12 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
                                target_transform=lambda x: x - min(digits),
                                digits=digits, fraction=fraction)
 
-    mnist_val = LimitedMNIST(root=MNIST, set_type="validation", transform=lambda x: x.reshape(-1, 28, 28),
-                             target_transform=lambda x: x - min(digits),
+    mnist_val = LimitedMNIST(root=MNIST, set_type="validation", target_transform=lambda x: x - min(digits),
                              digits=digits, fraction=fraction)
 
-    batch_size = 64
-    loader_train = DataLoader(mnist_train, batch_size=batch_size, num_workers=2, pin_memory=cuda)
-    loader_val = DataLoader(mnist_val, batch_size=batch_size, num_workers=2, pin_memory=cuda)
+    batch_size = 100
+    loader_train = DataLoader(mnist_train, batch_size=int(batch_size*fraction), num_workers=2, pin_memory=cuda)
+    loader_val = DataLoader(mnist_val, batch_size=int(batch_size*fraction), num_workers=2, pin_memory=cuda)
 
     model = BBBMLP(in_features=784, num_class=len(digits), num_hidden=100, num_layers=2,
                    p_logvar_init=p_logvar_init, p_pi=1.0, q_logvar_init=q_logvar_init, nflows=number_of_flows)
@@ -51,6 +49,9 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
         path = "results/original"+ extension + "/weights/model_epoch49.pkl"
         d = pickle.load(open(path, "rb"))
         model.load_state_dict(d)
+        model.resetprediction()
+
+    print(model)
 
     file_logger.initialise(filename)
     print_logger.initialise(filename)
@@ -63,7 +64,7 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
 
     def run_epoch(loader, MAP=False, is_training=False):
         diagnostics = {}
-        nbatch_per_epoch = len(loader.dataset) // loader.batch_size
+        nbatch_per_epoch = len(loader.dataset) / loader.batch_size
 
         for i, (data, labels) in tqdm(enumerate(loader)):
             # Repeat samples
@@ -76,7 +77,8 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
                 y = y.cuda()
 
             logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y),
-                                                       dataset_size=len(loader.dataset), MAP=MAP)
+                                                       dataset_size=nbatch_per_epoch, MAP=MAP)
+
             diagnostics = merge_add(diagnostics, _diagnostics)
 
             if is_training:
@@ -84,8 +86,9 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
                 loss.backward()
                 optimizer.step()
 
-        diagnostics = merge_average(diagnostics, nbatch_per_epoch)
-        return diagnostics 
+
+        diagnostics = merge_average(diagnostics, i+1)
+        return diagnostics
 
 
     diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP = [], [], []
@@ -109,15 +112,23 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
     file_logger.dump(model, epoch, batch_diagnostics, p_logvar_init)
 
 ###### Parameters for experiment ######
-use_all = False
-if use_all:
-	digits = [0, 1, 2, 3, 4]
-	transfer = [5, 6, 7, 8, 9]
-	name_ext	= "all"
-else:
-	digits = [3]
-	transfer = [8]
-	name_ext = "two"
+test_type = "all"
+if test_type is "all":
+    digits = [0, 1, 2, 3, 4]
+    transfer = [5, 6, 7, 8, 9]
+    name_ext	= test_type
+elif test_type is "3869":
+    digits = [3,8]
+    transfer = [6,9]
+    name_ext = test_type
+elif test_type is "1725":
+    digits = [1,7]
+    transfer = [2,5]
+    name_ext = test_type
+	
+if number_of_flows > 0:
+    name_ext + "flow"
+		
 # Train the model on the whole data of digits
 train_model("results/original", name_ext, digits, fraction=1.0)
 

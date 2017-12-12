@@ -108,12 +108,16 @@ class BBBMLP(nn.Module):
         for i in range(num_layers - 1):
             layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
                                           p_pi=p_pi, q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
-        layers += [nn.Linear(num_hidden, num_class)]
+        self.prediction = nn.Linear(num_hidden, num_class)
         #layers += [BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init,
         #                        p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow)]
 
         self.layers = nn.ModuleList(layers)
         self.loss = nn.CrossEntropyLoss()
+
+    def resetprediction(self):
+        nn.init.normal(self.prediction.weight.data)
+        nn.init.normal(self.prediction.bias.data)
 
     def probforward(self, x, MAP=False):
         diagnostics = defaultdict(list)
@@ -127,6 +131,7 @@ class BBBMLP(nn.Module):
                     diagnostics[k].append(v)
             else:
                 x = layer(x)
+        self.prediction(x)
         logits = x
         return logits, kl, diagnostics
 
