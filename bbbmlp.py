@@ -131,7 +131,7 @@ class BBBMLP(nn.Module):
         logits = x
         return logits, kl, diagnostics
 
-    def getloss(self, x, y, dataset_size, MAP=False):
+    def getloss(self, x, y, beta, dataset_size, MAP=False):
         logits, kl, _diagnostics = self.probforward(x, MAP=MAP)
         # _diagnostics is here a dictinary of list of floats
         # We need the dataset_size in order to 'spread' the KL divergence across all samples
@@ -140,7 +140,7 @@ class BBBMLP(nn.Module):
         logpy = -self.loss(logits, y)  # sample average
         kl /= dataset_size  # see EQ (8) in Blundell et al 2015
 
-        ll = logpy - kl  # ELBO
+        ll = logpy - beta*kl  # ELBO
         loss = -ll
 
         _, predicted = logits.max(1)

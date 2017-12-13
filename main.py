@@ -20,6 +20,7 @@ SAVE_EVERY  = 9
 N_SAMPLES   = 1
 LR          = 1e-3
 MNIST       = "./"
+TRANSFER    = False
 
 p_logvar_init = 0.
 q_logvar_init = -5.
@@ -69,7 +70,7 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
     if cuda:
         model.cuda()
 
-    def run_epoch(loader, MAP=False, is_training=False):
+    def run_epoch(loader, epoch, MAP=False, is_training=False):
         diagnostics = {}
         nbatch_per_epoch = len(loader.dataset) / loader.batch_size
 
@@ -83,7 +84,15 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
                 x = x.cuda()
                 y = y.cuda()
 
-            logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y),
+            if TRANSFER:
+                # Beta scheme for Ladder (Sønderby)
+                beta = min(epoch/100, 1)
+                # Beta scheme for BBB (Blundell)
+                beta = 2**(NUM_EPOCHS - epoch)/(2**NUM_EPOCHS - 1)
+            else:
+                beta = 1
+
+            logits, loss, _diagnostics = model.getloss(Variable(x), Variable(y), beta,
                                                        dataset_size=nbatch_per_epoch, MAP=MAP)
 
             diagnostics = merge_add(diagnostics, _diagnostics)
@@ -103,9 +112,9 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
     file_logger.dump(model, -1, None, p_logvar_init)
 
     for epoch in range(NUM_EPOCHS):
-        diagnostics_batch_train += [run_epoch(loader_train, is_training=True)]
-        diagnostics_batch_valid += [run_epoch(loader_val)]
-        diagnostics_batch_valid_MAP += [run_epoch(loader_val, MAP=True)]
+        diagnostics_batch_train += [run_epoch(loader_train, epoch, is_training=True)]
+        diagnostics_batch_valid += [run_epoch(loader_val, epoch)]
+        diagnostics_batch_valid_MAP += [run_epoch(loader_val, epoch, MAP=True)]
 
         batch_diagnostics = [diagnostics_batch_train, diagnostics_batch_valid, diagnostics_batch_valid_MAP]
 
@@ -146,6 +155,7 @@ train_model("results/domain0.3", name_ext, transfer, fraction=0.3, pretrained=Fa
 train_model("results/domain0.5", name_ext, transfer, fraction=0.5, pretrained=False)
 train_model("results/domain1", name_ext, transfer, fraction=1.0, pretrained=False)
 
+TRANSFER = True
 # Transfer to the second domain with the trained model
 train_model("results/transfer_domain0.05", name_ext, transfer, fraction=0.05, pretrained=True)
 train_model("results/transfer_domain0.1", name_ext, transfer, fraction=0.1, pretrained=True)
