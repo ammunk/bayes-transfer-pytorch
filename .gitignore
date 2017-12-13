@@ -1,1 +1,4 @@
 .DS_Store
+*.pyc
+mldata
+__pycache__
