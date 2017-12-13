@@ -7,8 +7,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from auxiliary import merge_add, merge_average
-from bbbmlp import BBBMLP
+from bbbmlp import BBBMLP, BBBLinearFactorial
 from datasets import LimitedMNIST
+from distributions import Normal
 from loggers import PrintLogger, WeightLogger
 
 ###### Hyperparameters ###### (you _might_ want to change this)
@@ -45,8 +46,14 @@ def train_model(filename, digits=[0], fraction=1.0, pretrained=False):
     if pretrained:
         path = "original/weights/model_epoch49.pkl"
         d = pickle.load(open(path, "rb"))
-        model.load_state_dict(d)
-        model.resetprediction()
+        d_q = {k: v for k, v in d.items() if "q" in k}
+        for i, layer in enumerate(model.layers):
+            if type(layer) is BBBLinearFactorial:
+                layer.pw = Normal(mu=Variable(d_q["layers.{}.qw_mean".format(i)]),
+                                  logvar=Variable(d_q["layers.{}.qw_logvar".format(i)]))
+
+                layer.pb = Normal(mu=Variable(d_q["layers.{}.qb_mean".format(i)]),
+                                  logvar=Variable(d_q["layers.{}.qb_logvar".format(i)]))
 
     print(model)
 
@@ -113,14 +120,14 @@ digits = [1, 2]
 transfer = [7, 8]
 
 # Train the model on the whole data of digits
-train_model("original", digits, fraction=1.0)
+#train_model("original", digits, fraction=1.0)
 #
-train_model("domain0.05", transfer, fraction=0.05, pretrained=False)
-train_model("domain0.1", transfer, fraction=0.1, pretrained=False)
-train_model("domain0.2", transfer, fraction=0.2, pretrained=False)
-train_model("domain0.3", transfer, fraction=0.3, pretrained=False)
-train_model("domain0.5", transfer, fraction=0.5, pretrained=False)
-train_model("domain1", transfer, fraction=1.0, pretrained=False)
+# train_model("domain0.05", transfer, fraction=0.05, pretrained=False)
+# train_model("domain0.1", transfer, fraction=0.1, pretrained=False)
+# train_model("domain0.2", transfer, fraction=0.2, pretrained=False)
+# train_model("domain0.3", transfer, fraction=0.3, pretrained=False)
+# train_model("domain0.5", transfer, fraction=0.5, pretrained=False)
+# train_model("domain1", transfer, fraction=1.0, pretrained=False)
 
 # Transfer to the second domain with the trained model
 train_model("transfer_domain0.05", transfer, fraction=0.05, pretrained=True)

@@ -115,10 +115,6 @@ class BBBMLP(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.loss = nn.CrossEntropyLoss()
 
-    def resetprediction(self):
-        nn.init.normal(self.prediction.weight.data)
-        nn.init.normal(self.prediction.bias.data)
-
     def probforward(self, x, MAP=False):
         diagnostics = defaultdict(list)
         kl = 0
