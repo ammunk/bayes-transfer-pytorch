@@ -1,14 +1,9 @@
 from __future__ import print_function
 import torch.utils.data as data
-from PIL import Image
 import os
 import os.path
 import errno
-import torch
-import json
-import codecs
-import numpy as np
-from PIL import Image
+
 
 class OMNIGLOT(data.Dataset):
     urls = [

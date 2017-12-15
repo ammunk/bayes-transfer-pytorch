@@ -6,6 +6,7 @@ import errno
 import torch
 import torch.utils.data as data
 from sklearn.datasets import fetch_mldata
+from sklearn.model_selection import StratifiedShuffleSplit
 import numpy as np
 
 
@@ -30,7 +31,7 @@ class LimitedMNIST(data.Dataset):
 
         self.mnist = fetch_mldata("MNIST original", data_home=root)
 
-        # Make sure data is shuffled
+        np.random.seed(seed=1337)
         indices = np.arange(len(self.mnist.target))
         np.random.shuffle(indices)
 
@@ -38,14 +39,18 @@ class LimitedMNIST(data.Dataset):
         self.mnist.target = self.mnist.target[indices]
 
         if set_type is "train":
-            self.mnist.data = self.mnist.data[:int(40000*fraction)]
-            self.mnist.target = self.mnist.target[:int(40000*fraction)]
+            self.mnist.data = self.mnist.data[:40000]
+            self.mnist.target = self.mnist.target[:40000]
+
+            if fraction < 1.0:
+                sss = StratifiedShuffleSplit(n_splits=1, test_size=fraction)
+                indices = list(sss.split(self.mnist.data, self.mnist.target))[0][1]
+
+                self.mnist.data = self.mnist.data[indices]
+                self.mnist.target = self.mnist.target[indices]
         elif set_type is "validation":
             self.mnist.data = self.mnist.data[40000:]
             self.mnist.target = self.mnist.target[40000:]
-        else:
-            self.mnist.data = self.mnist.data[50000:]
-            self.mnist.target = self.mnist.target[50000:]
 
         # Filter digits
         if digits is not None:
