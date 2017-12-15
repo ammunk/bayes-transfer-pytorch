@@ -12,6 +12,24 @@ the learnt posterior as a prior.
 * Normalizing flows [(Rezende 2015)](https://arxiv.org/abs/1505.05770)
 * Bayes by Backprop Convolutional network
 
+## How to run an experiment
+
+Make sure that you have Sacred installed `pip install sacred`. Then you would
+be able to run any experiment by running:
+
+```
+python main.py "experiment_name=results/original" "digits=[3, 4, 5]", "fraction=0.4"
+```
+
+After running it will generate a log file and a set of weights in the folder `results/original`. You can now perform
+transfer learning.
+
+```
+python main.py "experiment_name=results/transfer" "pretrained=results/original"
+               "digits=[3, 4, 5]", "fraction=0.4"
+```
+
+
 ## How to run on Google Compute Engine
 
 After creating a project go to **VM instances** and create a new instance.

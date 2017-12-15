@@ -1,16 +1,20 @@
 import math
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
 from torch.nn import Parameter
-from collections import defaultdict
+import torch.nn.functional as F
 
 from distributions import Normal, distribution_selector
 from normflow import NormalizingFlows
 
 
 class BBBLinearFactorial(nn.Module):
-    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5, nflows=0):
+    """
+    Describes a Linear fully connected Bayesian layer with
+    a distribution over each of the weights and biases
+    in the layer.
+    """
+    def __init__(self, in_features, out_features, p_logvar_init=0, p_pi=1.0, q_logvar_init=-5, nflows=0):
         # p_logvar_init, p_pi can be either
         #    (list/tuples): prior model is a mixture of gaussians components=len(p_pi)=len(p_logvar_init)
         #    float: Gussian distribution
@@ -54,9 +58,12 @@ class BBBLinearFactorial(nn.Module):
         raise NotImplementedError()
 
     def probforward(self, input, MAP=False):
-        # input: BS, in_features
-        # W: BS, in_features
-        # MAP: maximum a posterior (return the mode instead of sampling from the distributions)
+        """
+        Probabilistic forwarding method.
+        :param input: data tensor
+        :param MAP: boolean whether to take the MAP estimate.
+        :return: output, kl-divergence
+        """
         if MAP:
             w_sample = self.qw.mu
             b_sample = self.qb.mu
@@ -66,8 +73,9 @@ class BBBLinearFactorial(nn.Module):
 
         if self.nflows > 1:
             f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(1, -1))
-            f_w_sample = f_w_sample.view(w_sample.size())
             f_b_sample, log_det_b = self.normalizing_flow_b(b_sample.view(1, -1))
+
+            f_w_sample = f_w_sample.view(w_sample.size())
             f_b_sample = f_b_sample.view(b_sample.size())
 
             # Subtracting log det J is the same as multiplying by 1/(det J)
@@ -84,12 +92,9 @@ class BBBLinearFactorial(nn.Module):
         kl_b = torch.sum(qb_logpdf - self.pb.logpdf(f_b_sample))
         kl = kl_w + kl_b
 
-        diagnostics = {'kl_w': kl_w.data.mean(), 'kl_b': kl_b.data.mean(),
-                       'Hq_w': self.qw.entropy().data.mean(),
-                       'Hq_b': self.qb.entropy().data.mean()}  # Hq_w and Hq_b are the differential entropy
         output = F.linear(input, f_w_sample, f_b_sample)
 
-        return output, kl, diagnostics
+        return output, kl
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
@@ -97,63 +102,15 @@ class BBBLinearFactorial(nn.Module):
                + str(self.out_features) + ')'
 
 
-class BBBMLP(nn.Module):
-    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5,
-                 nflows=0):
-        # create a simple MLP model with probabilistic weights
-        super(BBBMLP, self).__init__()
-        layers = [
-            BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
-        for i in range(num_layers - 1):
-            layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
-                                          p_pi=p_pi, q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
-        self.prediction = nn.Linear(num_hidden, num_class)
-        #layers += [BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init,
-        #                        p_pi=p_pi, q_logvar_init=q_logvar_init, normflow=normflow)]
+class GaussianVariationalInference(nn.Module):
+    def __init__(self, loss=nn.CrossEntropyLoss()):
+        super(GaussianVariationalInference, self).__init__()
+        self.loss = loss
 
-        self.layers = nn.ModuleList(layers)
-        self.loss = nn.CrossEntropyLoss()
-
-    def probforward(self, x, MAP=False):
-        diagnostics = defaultdict(list)
-        kl = 0
-        for layer in self.layers:
-            if hasattr(layer, 'probforward') and callable(layer.probforward):
-                # Get intermediate diagnostics
-                x, _kl, _diagnostics = layer.probforward(x, MAP=MAP)
-                kl += _kl
-                for k, v in _diagnostics.items():
-                    diagnostics[k].append(v)
-            else:
-                x = layer(x)
-        self.prediction(x)
-        logits = x
-        return logits, kl, diagnostics
-
-    def getloss(self, x, y, beta, dataset_size, MAP=False):
-        logits, kl, _diagnostics = self.probforward(x, MAP=MAP)
-        # _diagnostics is here a dictinary of list of floats
-        # We need the dataset_size in order to 'spread' the KL divergence across all samples
-        # this is dscribed in EQ (8) in Blundel et. al. 2015
-
+    def forward(self, logits, y, kl, beta):
         logpy = -self.loss(logits, y)  # sample average
-        kl /= dataset_size  # see EQ (8) in Blundell et al 2015
 
-        ll = logpy - beta*kl  # ELBO
+        ll = logpy - beta * kl  # ELBO
         loss = -ll
 
-        _, predicted = logits.max(1)
-        acc = (predicted.data == y.data).float().mean()  # accuracy
-
-        # the xxx.data.mean() is just an easy way to transfer to cpu and convert from torch to normal floats
-        diagnostics = {'loss': [loss.data.mean()],
-                       'll': [ll.data.mean()],
-                       'kl': [kl.data.mean()],
-                       'logpy': [logpy.data.mean()],
-                       'acc': [acc],
-                       'kl_w': _diagnostics['kl_w'],
-                       'kl_b': _diagnostics['kl_b'],
-                       'Hq_w': _diagnostics['Hq_w'],
-                       'Hq_b': _diagnostics['Hq_b'], }
-        return logits, loss, diagnostics
+        return loss
