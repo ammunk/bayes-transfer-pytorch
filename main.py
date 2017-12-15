@@ -53,11 +53,11 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
         d_q = {k: v for k, v in d.items() if "q" in k}
         for i, layer in enumerate(model.layers):
             if type(layer) is BBBLinearFactorial:
-                layer.pw = Normal(mu=Variable(d_q["layers.{}.qw_mean".format(i)]),
-                                  logvar=Variable(d_q["layers.{}.qw_logvar".format(i)]))
+                layer.pw = Normal(mu=Variable(d_q["layers.{}.qw_mean".format(i)].cuda()),
+                                  logvar=Variable(d_q["layers.{}.qw_logvar".format(i)].cuda()))
 
-                layer.pb = Normal(mu=Variable(d_q["layers.{}.qb_mean".format(i)]),
-                                  logvar=Variable(d_q["layers.{}.qb_logvar".format(i)]))
+                layer.pb = Normal(mu=Variable(d_q["layers.{}.qb_mean".format(i)].cuda()),
+                                  logvar=Variable(d_q["layers.{}.qb_logvar".format(i)].cuda()))
 
     print(model)
 
@@ -88,7 +88,7 @@ def train_model(filename, extension, digits=[0], fraction=1.0, pretrained=False)
                 # Beta scheme for Ladder (Sønderby)
                 beta = min(epoch/100, 1)
                 # Beta scheme for BBB (Blundell)
-                beta = 2**(NUM_EPOCHS - epoch)/(2**NUM_EPOCHS - 1)
+                #beta = 2**(NUM_EPOCHS - epoch)/(2**NUM_EPOCHS - 1)
             else:
                 beta = 1
 
@@ -143,23 +143,31 @@ elif test_type is "1725":
     name_ext = test_type
 	
 if number_of_flows > 0:
-    name_ext + "flow"
+    name_ext += "flow"
+
+
+test_beta = True
+
+if test_beta:
+    name_ext += "_beta_naive"
+
+
 		
 # Train the model on the whole data of digits
 train_model("results/original", name_ext, digits, fraction=1.0)
 
-train_model("results/domain0.05", name_ext, transfer, fraction=0.05, pretrained=False)
-train_model("results/domain0.1", name_ext, transfer, fraction=0.1, pretrained=False)
-train_model("results/domain0.2", name_ext, transfer, fraction=0.2, pretrained=False)
-train_model("results/domain0.3", name_ext, transfer, fraction=0.3, pretrained=False)
-train_model("results/domain0.5", name_ext, transfer, fraction=0.5, pretrained=False)
+
+#train_model("results/domain0.05", name_ext, transfer, fraction=0.05, pretrained=False)
+#train_model("results/domain0.1", name_ext, transfer, fraction=0.1, pretrained=False)
+#train_model("results/domain0.2", name_ext, transfer, fraction=0.2, pretrained=False)
+#train_model("results/domain0.3", name_ext, transfer, fraction=0.3, pretrained=False)
+#train_model("results/domain0.5", name_ext, transfer, fraction=0.5, pretrained=False)
 train_model("results/domain1", name_ext, transfer, fraction=1.0, pretrained=False)
 
-TRANSFER = True
 # Transfer to the second domain with the trained model
-train_model("results/transfer_domain0.05", name_ext, transfer, fraction=0.05, pretrained=True)
-train_model("results/transfer_domain0.1", name_ext, transfer, fraction=0.1, pretrained=True)
-train_model("results/transfer_domain0.2", name_ext, transfer, fraction=0.2, pretrained=True)
-train_model("results/transfer_domain0.3", name_ext, transfer, fraction=0.3, pretrained=True)
-train_model("results/transfer_domain0.5", name_ext, transfer, fraction=0.5, pretrained=True)
+#train_model("results/transfer_domain0.05", name_ext, transfer, fraction=0.05, pretrained=True)
+#train_model("results/transfer_domain0.1", name_ext, transfer, fraction=0.1, pretrained=True)
+#train_model("results/transfer_domain0.2", name_ext, transfer, fraction=0.2, pretrained=True)
+#train_model("results/transfer_domain0.3", name_ext, transfer, fraction=0.3, pretrained=True)
+#train_model("results/transfer_domain0.5", name_ext, transfer, fraction=0.5, pretrained=True)
 train_model("results/transfer_domain1", name_ext, transfer, fraction=1.0, pretrained=True)
