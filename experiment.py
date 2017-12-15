@@ -27,7 +27,7 @@ def get_model(num_output, num_flows=0, pretrained=None):
     return model
 
 
-def get_data(digits=[0, 1], fraction=1.0):
+def get_data(digits, fraction):
     target_transform = lambda x: {str(digit): k for digit, k in zip(digits, range(len(digits)))}[str(int(x))]
 
     mnist_train = LimitedMNIST(root="./", set_type="train", target_transform=target_transform,
@@ -45,7 +45,7 @@ def get_data(digits=[0, 1], fraction=1.0):
 ex = Experiment("Bayesian Deep Transfer Learning")
 
 @ex.automain
-def main(experiment_name, digits, fraction, pretrained=None, n_samples=16, num_flows=0, beta_type="Blundell"):
+def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, n_samples=16, num_flows=0, beta_type="Blundell"):
     if not os.path.exists(experiment_name): os.makedirs(experiment_name)
     logfile = os.path.join(experiment_name, 'diagnostics.txt')
 
