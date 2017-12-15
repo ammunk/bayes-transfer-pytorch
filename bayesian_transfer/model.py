@@ -1,8 +1,8 @@
 import torch.nn as nn
 from torch.autograd import Variable
 
-from distributions import Normal
-from layers import BBBLinearFactorial
+from .distributions import Normal
+from .layers import BBBLinearFactorial
 
 
 class BBBMLP(nn.Module):

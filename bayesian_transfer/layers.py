@@ -4,8 +4,8 @@ from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
 
-from distributions import Normal, distribution_selector
-from normflow import NormalizingFlows
+from .distributions import Normal, distribution_selector
+from .normflow import NormalizingFlows
 
 
 class BBBLinearFactorial(nn.Module):
