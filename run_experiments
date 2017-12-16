@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#activate python 3.6
+source activate py36
+
+fractions=(0.05 0.10 0.20 0.30 0.50 1.0)
+beta=("Blundell" "Sønderbye" "Standard" "None")
+
+domainB="[0,1,2,3,4,5,6,7,8,9]"
+domainA="[0,1,2,3,4]"
+
+# run beta test
+for beta_name in "${beta[@]}"
+do
+    python experiment.py with "experiment_name=results/${domainB}_beta_${beta_name}" "digits=$domainB" "n_samples=10" "beta_type=$beta_name"
+done
+
+
+# run full domain A (used for transfer)
+#python experiment.py with "experiment_name=results/original_$domainA" "digits=$domainA" "n_samples=10"
+
+# train model on domain B using fraction (without transfer)
+#for frac in "${fractions[@]}"
+#do
+#    python experiment.py with "experiment_name=results/${domainB}_frac_${frac}" "digits=$domainB" "fraction=$frac" "n_samples=10"
+#done
+
+# train model on domain B using fraction (WITH transfer)
+#for frac in "${fractions[@]}"
+#do
+#    python experiment.py with "experiment_name=results/transfer_${domainB}_frac_${frac}" "pretrained=results/original_$domainA" "digits=$domainB" "fraction=$frac" "n_samples=10"
+#done
+

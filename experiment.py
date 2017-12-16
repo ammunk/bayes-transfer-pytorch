@@ -57,6 +57,7 @@ def blundell():
 @ex.named_config
 def normflow():
     experiment_name = "results/normflow"
+    num_flows = 16
     num_layers = 2
     num_hidden = 400
     num_samples = 10
@@ -76,8 +77,8 @@ def domain_a():
 
 
 @ex.named_config
-def domain_b(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
+def domain_b():
+    digits = [5,6,7,8,9]
     num_layers = 2
     num_hidden = 400
     num_samples = 10
@@ -86,9 +87,9 @@ def domain_b(fraction):
 
 
 @ex.named_config
-def transfer(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
+def transfer():
     pretrained = "results/domain_a"
+    digits = [5,6,7,8,9]
     num_layers = 2
     num_hidden = 400
     num_samples = 10
@@ -97,8 +98,7 @@ def transfer(fraction):
 
 
 @ex.named_config
-def beta(beta_type):
-    experiment_name = "results/beta_{}".format(beta_type)
+def beta():
     num_layers = 2
     num_hidden = 400
     num_samples = 10
@@ -106,13 +106,13 @@ def beta(beta_type):
 
 
 @ex.automain
-def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=16, num_flows=0, beta_type="Blundell",
+def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
          num_layers=2, num_hidden=100, num_epochs=51):
     if not os.path.exists(experiment_name): os.makedirs(experiment_name)
     logfile = os.path.join(experiment_name, 'diagnostics.txt')
     with open(logfile, "w") as fh:
         fh.write("")
-
+        
     loader_train, loader_val = get_data(digits, fraction)
 
     model = get_model(len(digits), num_hidden=num_hidden, num_layers=num_layers, num_flows=num_flows, pretrained=pretrained)
