@@ -44,6 +44,61 @@ def get_data(digits, fraction):
 
 ex = Experiment("Bayesian Deep Transfer Learning")
 
+@ex.named_config
+def blundell():
+    experiment_name="results/blundell"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def normflow(num_flows):
+    experiment_name = "results/normflow_{}".format(num_flows)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def domain_a():
+    digits = [0, 1, 2, 3, 4]
+    experiment_name = "results/domain_a"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def domain_b(fraction):
+    experiment_name = "results/domain_b_{}".format(fraction)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def transfer(fraction):
+    experiment_name = "results/domain_b_{}".format(fraction)
+    pretrained = "results/domain_a"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def beta(beta_type):
+    experiment_name = "results/beta_{}".format(beta_type)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+
 @ex.automain
 def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=16, num_flows=0, beta_type="Blundell",
          num_layers=2, num_hidden=100, num_epochs=51):
@@ -127,59 +182,3 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
         print(diagnostics_val)
 
         gc.collect()
-
-
-@ex.named_config
-def blundell():
-    experiment_name="results/blundell"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
-
-@ex.named_config
-def normflow(num_flows):
-    experiment_name = "results/normflow_{}".format(num_flows)
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
-
-@ex.named_config
-def domain_a():
-    digits = [0, 1, 2, 3, 4]
-    experiment_name = "results/domain_a"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
-
-@ex.named_config
-def domain_b(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
-
-@ex.named_config
-def transfer(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
-    pretrained = "results/domain_a"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
-
-@ex.named_config
-def beta(beta_type):
-    experiment_name = "results/beta_{}".format(beta_type)
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
