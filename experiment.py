@@ -15,8 +15,8 @@ from bayesian_transfer.datasets import LimitedMNIST
 
 cuda = torch.cuda.is_available()
 
-def get_model(num_output, num_flows=0, pretrained=None):
-    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=100, num_layers=2, nflows=num_flows)
+def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=None):
+    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows)
 
     if pretrained:
         d = pickle.load(open(pretrained + "/weights.pkl", "rb"))
@@ -44,14 +44,72 @@ def get_data(digits, fraction):
 
 ex = Experiment("Bayesian Deep Transfer Learning")
 
+@ex.named_config
+def blundell():
+    experiment_name="results/blundell"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def normflow(num_flows):
+    experiment_name = "results/normflow_{}".format(num_flows)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def domain_a():
+    digits = [0, 1, 2, 3, 4]
+    experiment_name = "results/domain_a"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def domain_b(fraction):
+    experiment_name = "results/domain_b_{}".format(fraction)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def transfer(fraction):
+    experiment_name = "results/domain_b_{}".format(fraction)
+    pretrained = "results/domain_a"
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+    beta_type = "Blundell"
+
+@ex.named_config
+def beta(beta_type):
+    experiment_name = "results/beta_{}".format(beta_type)
+    num_layers = 2
+    num_hidden = 400
+    num_samples = 10
+    num_epochs = 601
+
 @ex.automain
-def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, n_samples=16, num_flows=0, beta_type="Blundell"):
+def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=16, num_flows=0, beta_type="Blundell",
+         num_layers=2, num_hidden=100, num_epochs=51):
     if not os.path.exists(experiment_name): os.makedirs(experiment_name)
     logfile = os.path.join(experiment_name, 'diagnostics.txt')
+    with open(logfile, "w") as fh:
+        fh.write("")
 
     loader_train, loader_val = get_data(digits, fraction)
 
-    model = get_model(len(digits), num_flows=num_flows, pretrained=pretrained)
+    model = get_model(len(digits), num_hidden=num_hidden, num_layers=num_layers, num_flows=num_flows, pretrained=pretrained)
 
     vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
@@ -64,8 +122,8 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
 
         for i, (data, labels) in tqdm(enumerate(loader)):
             # Repeat samples
-            x = data.view(-1, 784).repeat(n_samples, 1)
-            y = labels.repeat(n_samples, 0)
+            x = data.view(-1, 784).repeat(num_samples, 1)
+            y = labels.repeat(num_samples, 0)
 
             y = Variable(y)
             x = Variable(x)
@@ -74,11 +132,11 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
                 x = x.cuda()
                 y = y.cuda()
 
-            if beta_type is "Blundell":
+            if beta_type == "Blundell":
                 beta = 2 ** (m - (i + 1)) / (2 ** m - 1)
-            elif beta_type is "Sønderbye":
+            elif beta_type == "Sønderbye":
                 beta = min(epoch / 100, 1)
-            elif beta_type is "Standard":
+            elif beta_type == "Standard":
                 beta = 1 / m
             else:
                 beta = 0
@@ -102,8 +160,7 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
 
         return diagnostics
 
-    n_epochs = 51
-    for epoch in range(n_epochs):
+    for epoch in range(num_epochs):
         diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
         diagnostics_val = run_epoch(loader_val, epoch)
 
@@ -116,7 +173,7 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
             fh.write(str(diagnostics_train))
             fh.write(str(diagnostics_val))
 
-        if epoch == n_epochs-1:
+        if epoch == num_epochs-1:
             with open(weightsfile, 'wb') as fh:
                 pickle.dump(model.state_dict(), fh)
 

@@ -18,14 +18,14 @@ Make sure that you have Sacred installed `pip install sacred`. Then you would
 be able to run any experiment by running:
 
 ```
-python experiment.py "experiment_name=results/original" "digits=[3, 4, 5]", "fraction=0.4"
+python experiment.py with "experiment_name=results/original" "digits=[3, 4, 5]", "fraction=0.4"
 ```
 
 After running it will generate a log file and a set of weights in the folder `results/original`. You can now perform
 transfer learning.
 
 ```
-python experiment.py "experiment_name=results/transfer" "pretrained=results/original"
+python experiment.py with "experiment_name=results/transfer" "pretrained=results/original"
                "digits=[3, 4, 5]", "fraction=0.4"
 ```
 
