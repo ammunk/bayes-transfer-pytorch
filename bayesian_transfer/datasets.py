@@ -39,8 +39,8 @@ class LimitedMNIST(data.Dataset):
         self.mnist.target = self.mnist.target[indices]
 
         if set_type is "train":
-            self.mnist.data = self.mnist.data[:40000]
-            self.mnist.target = self.mnist.target[:40000]
+            self.mnist.data = self.mnist.data[:45000]
+            self.mnist.target = self.mnist.target[:45000]
 
             if fraction < 1.0:
                 sss = StratifiedShuffleSplit(n_splits=1, test_size=fraction)
@@ -49,8 +49,8 @@ class LimitedMNIST(data.Dataset):
                 self.mnist.data = self.mnist.data[indices]
                 self.mnist.target = self.mnist.target[indices]
         elif set_type is "validation":
-            self.mnist.data = self.mnist.data[40000:]
-            self.mnist.target = self.mnist.target[40000:]
+            self.mnist.data = self.mnist.data[45000:]
+            self.mnist.target = self.mnist.target[45000:]
 
         # Filter digits
         if digits is not None:

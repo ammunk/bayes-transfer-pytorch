@@ -15,14 +15,13 @@ from bayesian_transfer.datasets import LimitedMNIST
 
 cuda = torch.cuda.is_available()
 
+
 def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=None):
     model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows)
 
     if pretrained:
         d = pickle.load(open(pretrained + "/weights.pkl", "rb"))
         model.load_prior(d)
-
-    if cuda: model.cuda()
 
     return model
 
@@ -44,23 +43,26 @@ def get_data(digits, fraction):
 
 ex = Experiment("Bayesian Deep Transfer Learning")
 
+
 @ex.named_config
 def blundell():
     experiment_name="results/blundell"
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
     beta_type = "Blundell"
 
+
 @ex.named_config
-def normflow(num_flows):
-    experiment_name = "results/normflow_{}".format(num_flows)
+def normflow():
+    experiment_name = "results/normflow"
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
     beta_type = "Blundell"
+
 
 @ex.named_config
 def domain_a():
@@ -69,8 +71,9 @@ def domain_a():
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
     beta_type = "Blundell"
+
 
 @ex.named_config
 def domain_b(fraction):
@@ -78,8 +81,9 @@ def domain_b(fraction):
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
     beta_type = "Blundell"
+
 
 @ex.named_config
 def transfer(fraction):
@@ -88,8 +92,9 @@ def transfer(fraction):
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
     beta_type = "Blundell"
+
 
 @ex.named_config
 def beta(beta_type):
@@ -97,7 +102,8 @@ def beta(beta_type):
     num_layers = 2
     num_hidden = 400
     num_samples = 10
-    num_epochs = 601
+    num_epochs = 51
+
 
 @ex.automain
 def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=16, num_flows=0, beta_type="Blundell",
@@ -120,29 +126,23 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
         accuracies = []
         losses = []
 
-        for i, (data, labels) in tqdm(enumerate(loader)):
+        for i, (data, labels) in enumerate(tqdm(loader)):
             # Repeat samples
             x = data.view(-1, 784).repeat(num_samples, 1)
             y = labels.repeat(num_samples, 0)
 
-            y = Variable(y)
-            x = Variable(x)
-
-            if cuda:
-                x = x.cuda()
-                y = y.cuda()
-
             if beta_type == "Blundell":
                 beta = 2 ** (m - (i + 1)) / (2 ** m - 1)
-            elif beta_type == "Sønderbye":
-                beta = min(epoch / 100, 1)
+            elif beta_type == "Soenderby":
+                # Deterministic warmup
+                beta = min(epoch / (num_epochs//2), 1)
             elif beta_type == "Standard":
                 beta = 1 / m
             else:
                 beta = 0
 
-            logits, kl = model.probforward(x)
-            loss = vi(logits, y, kl, beta)
+            logits, kl = model.probforward(Variable(x))
+            loss = vi(logits, Variable(y), kl, beta)
 
             if is_training:
                 optimizer.zero_grad()
@@ -150,7 +150,7 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
                 optimizer.step()
 
             _, predicted = logits.max(1)
-            accuracy = (predicted.data == y.data).float().mean()
+            accuracy = (predicted.data == y).float().mean()
 
             accuracies.append(accuracy)
             losses.append(loss.data.mean())

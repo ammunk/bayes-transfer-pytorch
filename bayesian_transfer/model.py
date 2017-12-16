@@ -6,16 +6,15 @@ from .layers import BBBLinearFactorial
 
 
 class BBBMLP(nn.Module):
-    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=0, p_pi=1.0, q_logvar_init=-5,
+    def __init__(self, in_features, num_class, num_hidden, num_layers, p_logvar_init=0, p_pi=1.0, q_logvar_init=-4,
                  nflows=0):
         # create a simple MLP model with probabilistic weights
         super(BBBMLP, self).__init__()
-        layers = [
-            BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
-                               q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
-        for i in range(num_layers - 1):
-            layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init,
-                                          p_pi=p_pi, q_logvar_init=q_logvar_init, nflows=nflows), nn.ELU()]
+        layers = [BBBLinearFactorial(in_features, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
+                               q_logvar_init=q_logvar_init, nflows=nflows), nn.ReLU()]
+        for i in range(num_layers-1):
+            layers += [BBBLinearFactorial(num_hidden, num_hidden, p_logvar_init=p_logvar_init, p_pi=p_pi,
+                                          q_logvar_init=q_logvar_init, nflows=nflows), nn.ReLU()]
 
         layers += [BBBLinearFactorial(num_hidden, num_class, p_logvar_init=p_logvar_init,
                                       p_pi=p_pi, q_logvar_init=q_logvar_init, nflows=nflows)]
@@ -26,7 +25,6 @@ class BBBMLP(nn.Module):
         kl = 0
         for layer in self.layers:
             if hasattr(layer, 'probforward') and callable(layer.probforward):
-                # Get intermediate diagnostics
                 x, _kl, = layer.probforward(x, MAP=MAP)
                 kl += _kl
             else:

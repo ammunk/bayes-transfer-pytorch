@@ -14,7 +14,7 @@ class BBBLinearFactorial(nn.Module):
     a distribution over each of the weights and biases
     in the layer.
     """
-    def __init__(self, in_features, out_features, p_logvar_init=0, p_pi=1.0, q_logvar_init=-5, nflows=0):
+    def __init__(self, in_features, out_features, p_logvar_init=-3, p_pi=1.0, q_logvar_init=-5, nflows=0):
         # p_logvar_init, p_pi can be either
         #    (list/tuples): prior model is a mixture of gaussians components=len(p_pi)=len(p_logvar_init)
         #    float: Gussian distribution
@@ -26,6 +26,7 @@ class BBBLinearFactorial(nn.Module):
         self.p_logvar_init = p_logvar_init
         self.q_logvar_init = q_logvar_init
 
+        # Normalizing flows
         self.nflows = nflows
         self.normalizing_flow_w = NormalizingFlows(n=self.nflows, features=in_features*out_features)
         self.normalizing_flow_b = NormalizingFlows(n=self.nflows, features=out_features)
@@ -71,7 +72,7 @@ class BBBLinearFactorial(nn.Module):
             w_sample = self.qw.sample()
             b_sample = self.qb.sample()
 
-        if self.nflows > 1:
+        if self.nflows > 0:
             f_w_sample, log_det_w = self.normalizing_flow_w(w_sample.view(1, -1))
             f_b_sample, log_det_b = self.normalizing_flow_b(b_sample.view(1, -1))
 

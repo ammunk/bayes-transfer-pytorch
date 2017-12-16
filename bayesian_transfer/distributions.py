@@ -29,13 +29,12 @@ class Distribution(object):
 
 
 class Normal(Distribution):
-    #! rho?
     # scalar version
     def __init__(self, mu, logvar):
-        super(Normal, self).__init__()
         self.mu = mu
         self.logvar = logvar
         self.shape = mu.size()
+        super(Normal, self).__init__()
 
     def logpdf(self, x):
         c = - float(0.5 * math.log(2 * math.pi))
@@ -46,13 +45,25 @@ class Normal(Distribution):
 
     def sample(self):
         if self.mu.is_cuda:
-            eps = torch.randn(self.shape).cuda()
+            eps = torch.cuda.FloatTensor(self.shape).normal_()
         else:
-            eps = torch.randn(self.shape)
+            eps = torch.FloatTensor(self.shape).normal_()
         return self.mu + torch.exp(0.5 * self.logvar) * Variable(eps)
 
     def entropy(self):
         return 0.5 * math.log(2. * math.pi * math.e) + 0.5 * self.logvar
+
+
+class FixedNormal(Distribution):
+    # takes loc and logvar as float values and assumes they are shared across all dimenisions
+    def __init__(self, mu, logvar):
+        self.mu = mu
+        self.logvar = logvar
+        super(FixedNormal, self).__init__()
+
+    def logpdf(self, x):
+        c = - float(0.5 * math.log(2 * math.pi))
+        return c - 0.5 * self.logvar - (x - self.mu).pow(2) / 2 * math.exp(self.logvar)
 
 
 class FixedMixtureNormal(nn.Module):
@@ -84,18 +95,6 @@ class FixedMixtureNormal(nn.Module):
         pi = self.pi[shape_expand]
         px = torch.exp(self._component_logpdf(x))  # ... x num_components
         return torch.log(torch.sum(pi * px, -1))
-
-
-class FixedNormal(Distribution):
-    # takes loc and logvar as float values and assumes they are shared across all dimenisions
-    def __init__(self, mu, logvar):
-        super(FixedNormal, self).__init__()
-        self.mu = mu
-        self.logvar = logvar
-
-    def logpdf(self, x):
-        c = - float(0.5 * math.log(2 * math.pi))
-        return c - 0.5 * self.logvar - (x - self.mu).pow(2) / 2 * math.exp(self.logvar)
 
 
 def distribution_selector(mu, logvar, pi):
