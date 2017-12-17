@@ -2,17 +2,21 @@ import math
 import os
 import gc
 import pickle
-import numpy as np
+from functools import reduce
+from operator import __or__
 
+import numpy
 import torch
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
+from torchvision import transforms
+from torchvision.datasets import MNIST
 from tqdm import tqdm
 from sacred import Experiment
 
 from bayesian_transfer.layers import GaussianVariationalInference
 from bayesian_transfer.model import BBBMLP
-from bayesian_transfer.datasets import LimitedMNIST
 
 cuda = torch.cuda.is_available()
 
@@ -29,100 +33,90 @@ def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=
 def get_data(digits, fraction):
     target_transform = lambda x: {str(digit): k for digit, k in zip(digits, range(len(digits)))}[str(int(x))]
 
-    mnist_train = LimitedMNIST(root="./", set_type="train", target_transform=target_transform,
-                               digits=digits, fraction=fraction)
+    mnist_train = MNIST(root="./", download=True, transform=transforms.ToTensor(),
+                        target_transform=target_transform)
+    mnist_valid = MNIST(root="./", train=False, download=True, transform=transforms.ToTensor(),
+                        target_transform=target_transform)
 
-    mnist_val = LimitedMNIST(root="./", set_type="validation", target_transform=target_transform,
-                             digits=digits, fraction=fraction)
+    def get_sampler(labels):
+        (indices,) = numpy.where(reduce(__or__, [labels == i for i in digits]))
+        indices = torch.from_numpy(numpy.random.permutation(indices))
+        sampler = SubsetRandomSampler(indices[:int(len(indices)*fraction)])
+        return sampler
 
-    loader_train = DataLoader(mnist_train, batch_size=128, num_workers=2, pin_memory=cuda)
-    loader_val = DataLoader(mnist_val, batch_size=128, num_workers=2, pin_memory=cuda)
 
-    return loader_train, loader_val
+    loader_train = DataLoader(mnist_train, batch_size=128, num_workers=2, pin_memory=cuda,
+                              sampler=get_sampler(mnist_train.train_labels.numpy()))
+
+    loader_valid = DataLoader(mnist_valid, batch_size=128, num_workers=2, pin_memory=cuda,
+                              sampler=get_sampler(mnist_valid.test_labels.numpy()))
+
+    return loader_train, loader_valid
 
 
 ex = Experiment("Bayesian Deep Transfer Learning")
 
+
 @ex.named_config
 def blundell():
-    experiment_name="results/blundell2"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 51
+    experiment_name = "results/blundell"
     beta_type = "Blundell"
+
 
 @ex.named_config
 def normflow():
     experiment_name = "results/normflow"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
     num_flows = 16
-    num_epochs = 51
     beta_type = "Blundell"
+
 
 @ex.named_config
 def domain_a():
     digits = [0, 1, 2, 3, 4]
     experiment_name = "results/domain_a"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
     beta_type = "Blundell"
 
-@ex.named_config
-def domain_b(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
-    beta_type = "Blundell"
 
 @ex.named_config
-def transfer(fraction):
-    experiment_name = "results/domain_b_{}".format(fraction)
+def domain_b():
+    digits = [5, 6, 7, 8, 9]
+    beta_type = "Blundell"
+
+
+@ex.named_config
+def transfer():
+    digits = [5, 6, 7, 8, 9]
     pretrained = "results/domain_a"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 601
     beta_type = "Blundell"
+
+
+@ex.named_config
+def beta_blundell():
+    experiment_name="results/beta_blundell"
+    beta_type = "Blundell"
+
 
 @ex.named_config
 def beta_standard():
     experiment_name = "results/beta_standard"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 51
     beta_type = "Standard"
+
 
 @ex.named_config
 def beta_soenderby():
     experiment_name = "results/beta_soenderby"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 51
     beta_type = "Soenderby"
+
 
 @ex.named_config
 def beta_none():
     experiment_name = "results/beta_none"
-    num_layers = 2
-    num_hidden = 400
-    num_samples = 10
-    num_epochs = 51
     beta_type = "None"
 
 
-
 @ex.automain
-def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=16, num_flows=0, beta_type="Blundell",
-         num_layers=2, num_hidden=100, num_epochs=51):
+def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
+         num_layers=2, num_hidden=400, num_epochs=101):
     if not os.path.exists(experiment_name): os.makedirs(experiment_name)
     logfile = os.path.join(experiment_name, 'diagnostics.txt')
     with open(logfile, "w") as fh:
@@ -144,10 +138,10 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
         accuracies = []
         losses = []
 
-        for i, (data, labels) in tqdm(enumerate(loader)):
+        for i, (data, labels) in enumerate(tqdm(loader)):
             # Repeat samples
             x = data.view(-1, 784).repeat(num_samples, 1)
-            y = labels.repeat(num_samples, 0)
+            y = labels.repeat(num_samples)
 
             if cuda:
                 x = x.cuda()
@@ -156,12 +150,11 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
             if beta_type == "Blundell":
                 beta = 2 ** (m - (i + 1)) / (2 ** m - 1)
             elif beta_type == "Soenderby":
-                beta = min(epoch / 100, 1)
+                beta = min(epoch / (num_epochs//4), 1)
             elif beta_type == "Standard":
                 beta = 1 / m
             else:
                 beta = 0
-
 
             logits, kl = model.probforward(Variable(x))
             loss = vi(logits, Variable(y), kl, beta)
@@ -187,8 +180,8 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
         diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
         diagnostics_val = run_epoch(loader_val, epoch)
 
-        diagnostics_train = dict({"type": "train"}, **diagnostics_train)
-        diagnostics_val = dict({"type": "validation"}, **diagnostics_val)
+        diagnostics_train = dict({"type": "train", "epoch": epoch}, **diagnostics_train)
+        diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
 
         weightsfile = os.path.join(experiment_name, 'weights.pkl')
 
