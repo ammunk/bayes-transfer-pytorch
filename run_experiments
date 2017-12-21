@@ -4,12 +4,11 @@
 source activate py36
 
 fractions=(0.05 0.10 0.20 0.30 0.50 1.0)
-beta=("beta_blundell" "beta_standard" "beta_standard" "beta_none")
+beta=("beta_blundell" "beta_standard" "beta_none")
 
 # run beta test
 for beta_name in "${beta[@]}"
 do
-    echo "Running with $beta_name"
     python experiment.py with $beta_name
 done
 

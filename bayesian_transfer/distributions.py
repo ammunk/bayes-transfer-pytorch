@@ -63,7 +63,7 @@ class FixedNormal(Distribution):
 
     def logpdf(self, x):
         c = - float(0.5 * math.log(2 * math.pi))
-        return c - 0.5 * self.logvar - (x - self.mu).pow(2) / 2 * math.exp(self.logvar)
+        return c - 0.5 * self.logvar - (x - self.mu).pow(2) / (2 * math.exp(self.logvar))
 
 
 class FixedMixtureNormal(nn.Module):

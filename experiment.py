@@ -21,7 +21,7 @@ from bayesian_transfer.model import BBBMLP
 cuda = torch.cuda.is_available()
 
 def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=None):
-    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows)
+    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows, p_logvar_init = -2)
 
     if pretrained:
         d = pickle.load(open(pretrained + "/weights.pkl", "rb"))
@@ -136,6 +136,8 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
         m = math.ceil(len(loader.dataset) / loader.batch_size)
 
         accuracies = []
+        likelihoods = []
+        kls = []
         losses = []
 
         for i, (data, labels) in enumerate(tqdm(loader)):
@@ -158,6 +160,7 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
 
             logits, kl = model.probforward(Variable(x))
             loss = vi(logits, Variable(y), kl, beta)
+            ll = -loss.data.mean() + beta*kl.data.mean()
 
             if is_training:
                 optimizer.zero_grad()
@@ -169,9 +172,13 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
 
             accuracies.append(accuracy)
             losses.append(loss.data.mean())
+            kls.append(beta*kl.data.mean())
+            likelihoods.append(ll)
 
         diagnostics = {'loss': sum(losses)/len(losses),
-                       'acc': sum(accuracies)/len(accuracies)}
+                       'acc': sum(accuracies)/len(accuracies),
+                       'kl': sum(kls)/len(kls),
+                       'likelihood': sum(likelihoods)/len(likelihoods)}
 
         return diagnostics
 
