@@ -1,16 +1,15 @@
 # Bayesian deep transfer learning
 
 This repository implements Bayes by Backprop [(Blundell 2015)](https://arxiv.org/abs/1505.05424)
-along with some neat methods to increase performance. The goal of the
+along with some neat methods to increase classifier performance. The goal of this
 project is to understand how learning a posterior distribution
 over some task can help in transfering to a new domain by using
-the learnt posterior as a prior.
+the learnt posterior as a prior. We have therefore created a model for Bayesian transfer learning.
 
 ## Implemented methods
 
 * Bayes by Backprop MLP [(Blundell 2015)](https://arxiv.org/abs/1505.05424)
 * Normalizing flows [(Rezende 2015)](https://arxiv.org/abs/1505.05770)
-* Bayes by Backprop Convolutional network
 
 ## How to run an experiment
 
@@ -18,41 +17,51 @@ Make sure that you have Sacred installed `pip install sacred`. Then you would
 be able to run any experiment by running:
 
 ```
-python experiment.py with "experiment_name=results/original" "digits=[3, 4, 5]", "fraction=0.4"
+python experiment.py with "${experiment_name}"
 ```
 
-After running it will generate a log file and a set of weights in the folder `results/original`. You can now perform
-transfer learning.
+After running it will generate a log file and a set of weights in the folder `results/${experiment_name}`.
+
+### Recreating Blundell
+
+For example if you want to recreate the Bayes-By-Backprop paper by Blundell, you will need to run.
 
 ```
-python experiment.py with "experiment_name=results/transfer" "pretrained=results/original"
-               "digits=[3, 4, 5]", "fraction=0.4"
+python experiment.py with "blundell"
 ```
 
+In the plot below shows the accuracy over each epoch for different schemes for beta.
 
-## How to run on Google Compute Engine
+![](figs/comparing_beta.png)
 
-After creating a project go to **VM instances** and create a new instance.
-For machine type choose atleast 4 CPU cores and 16 GB of memory and choose
-the number of GPUs under advanced settings - 1 K80 will usually do.
+### Normalizing flows
 
-For boot disk choose Ubuntu 14.04 and increase the disk size to atleast 40 GB.
-If you do not have any project wide SSH-keys, you will need to add them inside the
-management tab by copy-pasting your public key.
-
-When the machine is up, it will give you an external IP-address from which you
-can SSH into, for example:
+To perform the same experiment as above, but with 16 normalizing flows, you can run the experiment as:
 
 ```
-ssh -i ~/.ssh/id_rsa 'your-username-for-the-key'@'external-ip'
+python experiment.py with "blundell" "num_flows=16" "experiment_name=results/normflow"
 ```
 
-When inside the machine, after cloning the repository, and being in the folder bayes_02456, you will need to run
-the install script to get CUDA 8 and PyTorch.
+This will allow the training to converge much faster in accuracy, but at the cost of additional computation of flows.
+
+![](figs/normflow.png)
+
+### Transfer learning
+
+Finally, to perform Bayesian transfer learning, you will need to train one model on one subset of the data A and then use the learned posterior over weights as a prior for learning on data B.
+
+We have made convenient experiments to make this work. First run:
 
 ```
-chmod +x gcloud.sh
-sudo sh ./gcloud.sh
+python experiment.py with "domain_a"
 ```
 
-This should install everything and you can run the `main.py` file.
+to train on A, then run:
+
+```
+python experiment.py with "transfer"
+```
+
+to transfer to the second domain. In general this does not good performance as evidenced by the plot below.
+
+![](figs/transfer_results.png)

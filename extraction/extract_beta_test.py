@@ -11,7 +11,7 @@ plt.rc('font', family='serif', size=22)
 plt.rcParams.update({'legend.fontsize': 16, 'xtick.labelsize': 16,
 'ytick.labelsize': 16, 'axes.labelsize': 16})
 def load_data():
-    files_no_transfer = [open("results/beta_{0}.txt".format(beta_type)).read() for beta_type in ["blundell", "standard", "ml"] ]
+    files_no_transfer = [open("../results/beta_{0}.txt".format(beta_type)).read() for beta_type in ["blundell", "standard", "ml"] ]
     
     accuracies = [list(map(lambda x: x.split(" ")[-1], re.findall(r"(acc: \d.\d+)", file))) for file in files_no_transfer]
     valid = [acc[1::3] for acc in accuracies]
@@ -33,4 +33,4 @@ plt.xticks(x_ticks[::5], map(lambda x: x+1, x_ticks[::5]))
 f.suptitle(r"Comparing different $\beta$ using the digits (0-9)")
 plt.legend(loc = 4)
 
-plt.savefig("figs/comparing_beta.pdf")
+plt.savefig("../figs/comparing_beta.pdf")

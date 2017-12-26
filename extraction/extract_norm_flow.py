@@ -11,7 +11,7 @@ plt.rc('font', family='serif', size=22)
 plt.rcParams.update({'legend.fontsize': 16, 'xtick.labelsize': 16,
 'ytick.labelsize': 16, 'axes.labelsize': 16})
 def load_data(basename):
-    normflow = open("norm_flow/{}.txt".format(basename)).read()
+    normflow = open("../norm_flow/{}.txt".format(basename)).read()
     
     accuracies = list(map(lambda x: x.split(" ")[-1], re.findall(r"(acc: \d.\d+)", normflow)))
     valid = accuracies[1::3]
@@ -37,6 +37,6 @@ plt.xticks(x_ticks[5::5], map(lambda x: x, x_ticks[5::5]))
 f.suptitle("With and without Normalizing Flows")
 plt.legend(loc = 7)
 
-plt.savefig("figs/normflow.pdf")
+plt.savefig("../figs/normflow.pdf")
 
 

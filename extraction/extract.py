@@ -12,7 +12,7 @@ plt.rcParams.update({'legend.fontsize': 16, 'xtick.labelsize': 16,
 'ytick.labelsize': 16, 'axes.labelsize': 16})
 
 def load_data(basename):
-    files_no_transfer = [open("results/{0}_{1}.txt".format(basename, frac)).read() for frac in ["005", "025", "05","100"] ]
+    files_no_transfer = [open("../results/{0}_{1}.txt".format(basename, frac)).read() for frac in ["005", "025", "05","100"] ]
     
     accuracies = [list(map(lambda x: x.split(" ")[-1], re.findall(r"(acc: \d.\d+)", file))) for file in files_no_transfer]
     valid = [acc[1::3] for acc in accuracies]
@@ -37,4 +37,4 @@ for basename in ["domain_b", "transfer_b"]:
 plt.xticks(x_ticks[5::5], map(lambda x: x, x_ticks[5::5]))
 f.suptitle("Evalutating transfer properties")
 plt.legend(loc = 4)
-plt.savefig("figs/transfer_results.pdf")
+plt.savefig("../figs/transfer_results.pdf")
