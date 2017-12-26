@@ -1,7 +1,7 @@
 # Bayesian deep transfer learning
 
 This repository implements Bayes by Backprop [(Blundell 2015)](https://arxiv.org/abs/1505.05424)
-along with some neat methods to increase classifier performance. The goal of this
+in **PyTorch** along with some neat methods to increase classifier performance. The goal of this
 project is to understand how learning a posterior distribution
 over some task can help in transfering to a new domain by using
 the learnt posterior as a prior. We have therefore created a model for Bayesian transfer learning.
@@ -65,3 +65,16 @@ python experiment.py with "transfer"
 to transfer to the second domain. In general this does not good performance as evidenced by the plot below.
 
 ![](figs/transfer_results.png)
+
+## Acknowledgement
+
+This project was created by:
+
+* [Andreas Munk](https://github.com/ammunk)
+* [Jesper Wohlert](https://github.com/wohlert)
+* [Felix Laumann](https://github.com/felix-laumann)
+* Sayantan Sengupta
+
+Under the supervision of
+
+* [Casper Sønderby](https://github.com/casperkaae)

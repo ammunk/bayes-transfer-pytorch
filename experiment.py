@@ -16,7 +16,7 @@ from tqdm import tqdm
 from sacred import Experiment
 
 from bayesian_transfer.layers import GaussianVariationalInference
-from bayesian_transfer.model import BBBMLP
+from bayesian_transfer.models import BBBMLP
 
 cuda = torch.cuda.is_available()
 
