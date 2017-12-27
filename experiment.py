@@ -82,9 +82,9 @@ def blundell():
 def normflow():
     experiment_name = "results/normflow"
     num_flows = 16
-    num_epochs = 100
+    num_epochs = 600
     q_logvar_init = -8
-    lr=1e-3
+    lr=1e-5
     beta_type = "Blundell"
 
 
