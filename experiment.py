@@ -20,8 +20,8 @@ from bayesian_transfer.models import BBBMLP
 
 cuda = torch.cuda.is_available()
 
-def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=None):
-    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows, p_logvar_init = -2)
+def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=None, p_logvar_init = 0, q_logvar_init=-8):
+    model = BBBMLP(in_features=784, num_class=num_output, num_hidden=num_hidden, num_layers=num_layers, nflows=num_flows, p_logvar_init = p_logvar_init, q_logvar_init=q_logvar_init)
 
     if pretrained:
         d = pickle.load(open(pretrained + "/weights.pkl", "rb"))
@@ -32,12 +32,26 @@ def get_model(num_output, num_hidden=100, num_layers=2, num_flows=0, pretrained=
 
 def get_data(digits, fraction):
     target_transform = lambda x: {str(digit): k for digit, k in zip(digits, range(len(digits)))}[str(int(x))]
-
+    
+    convert = transforms.Compose([
+            # convert PIL image to numpy
+            transforms.Lambda(lambda x: numpy.array(x)),
+            # divide values by 126 like Blundell
+            transforms.Lambda(lambda x: x.astype(numpy.float32)/ 126),
+            # return tensor
+            torch.from_numpy
+            ])
+    """
     mnist_train = MNIST(root="./", download=True, transform=transforms.ToTensor(),
                         target_transform=target_transform)
     mnist_valid = MNIST(root="./", train=False, download=True, transform=transforms.ToTensor(),
+                       target_transform=target_transform)
+    
+    """
+    mnist_train = MNIST(root="./", download=True, transform=convert,
                         target_transform=target_transform)
-
+    mnist_valid = MNIST(root="./", train=False, download=True, transform=convert,
+                        target_transform=target_transform)          
     def get_sampler(labels):
         (indices,) = numpy.where(reduce(__or__, [labels == i for i in digits]))
         indices = torch.from_numpy(numpy.random.permutation(indices))
@@ -61,62 +75,76 @@ ex = Experiment("Bayesian Deep Transfer Learning")
 def blundell():
     experiment_name = "results/blundell"
     beta_type = "Blundell"
+    num_epochs = 600
 
 
 @ex.named_config
 def normflow():
     experiment_name = "results/normflow"
     num_flows = 16
+    num_epochs = 600
+    q_logvar_init = -8
+    lr=1e-5
     beta_type = "Blundell"
 
 
 @ex.named_config
 def domain_a():
-    digits = [0, 1, 2, 3, 4]
+    digits = [0,1,2,3,4]
     experiment_name = "results/domain_a"
     beta_type = "Blundell"
+    num_epochs = 600
 
 
 @ex.named_config
 def domain_b():
-    digits = [5, 6, 7, 8, 9]
+    digits = [5,6,7,8,9]
+    experiment_name = "results/domain_b"
     beta_type = "Blundell"
+    num_epochs = 600
 
 
 @ex.named_config
 def transfer():
-    digits = [5, 6, 7, 8, 9]
+    digits = [5,6,7,8,9]
+    p_logvar_init = 0
+    q_logvar_init=-8
+    lr=1e-5
     pretrained = "results/domain_a"
     beta_type = "Blundell"
+    num_epochs = 600
 
 
 @ex.named_config
 def beta_blundell():
     experiment_name="results/beta_blundell"
     beta_type = "Blundell"
+    num_epochs = 600
 
 
 @ex.named_config
 def beta_standard():
     experiment_name = "results/beta_standard"
     beta_type = "Standard"
+    num_epochs = 600
 
 
 @ex.named_config
 def beta_soenderby():
     experiment_name = "results/beta_soenderby"
     beta_type = "Soenderby"
+    num_epochs = 600
 
 
 @ex.named_config
 def beta_none():
     experiment_name = "results/beta_none"
     beta_type = "None"
-
+    num_epochs = 600
 
 @ex.automain
 def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
-         num_layers=2, num_hidden=400, num_epochs=101):
+         num_layers=2, num_hidden=400, num_epochs=101, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
     if not os.path.exists(experiment_name): os.makedirs(experiment_name)
     logfile = os.path.join(experiment_name, 'diagnostics.txt')
     with open(logfile, "w") as fh:
@@ -124,10 +152,10 @@ def main(experiment_name, digits=list(range(10)), fraction=1.0, pretrained=None,
 
     loader_train, loader_val = get_data(digits, fraction)
 
-    model = get_model(len(digits), num_hidden=num_hidden, num_layers=num_layers, num_flows=num_flows, pretrained=pretrained)
+    model = get_model(len(digits), num_hidden=num_hidden, num_layers=num_layers, num_flows=num_flows, pretrained=pretrained, p_logvar_init=p_logvar_init, q_logvar_init=q_logvar_init)
 
     vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
-    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
+    optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr)
 
     if cuda:
         model.cuda()
