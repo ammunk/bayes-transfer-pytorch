@@ -7,11 +7,11 @@ import seaborn as sns
 import re
 import numpy as np
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif', size=22)
-plt.rcParams.update({'legend.fontsize': 16, 'xtick.labelsize': 16,
-'ytick.labelsize': 16, 'axes.labelsize': 16})
+plt.rc('font', family='serif', size=24)
+plt.rcParams.update({'legend.fontsize': 24, 'xtick.labelsize': 24,
+'ytick.labelsize': 24, 'axes.labelsize': 24})
 def load_data():
-    files_no_transfer = [open("../results/beta_{0}/diagnostics.txt".format(beta_type)).read() for beta_type in ["blundell", "none", "standard"] ]
+    files_no_transfer = [open("results/beta_{0}/diagnostics.txt".format(beta_type)).read() for beta_type in ["blundell", "none", "standard"] ]
     
     accuracies = [list(map(lambda x: x.split(" ")[-1], re.findall(r"(\'acc\': \d.\d+)", file))) for file in files_no_transfer]
     valid = [acc[1::2] for acc in accuracies]
@@ -25,7 +25,7 @@ x_ticks = range(vt.shape[1])
 colors  = sns.color_palette(n_colors = 4)
 legends  = [r"$\frac{2^{M-i}}{2^M-1}$", "0", r"$\frac{1}{M}$"]
 for values, legend_name, color in zip(vt ,legends, colors):
-    plt.plot(x_ticks, values, label=r"Accuracy with transfer, with $\beta$= {0}".format(legend_name), color=color)
+    plt.plot(x_ticks, values, label=r"$\beta$= {0}".format(legend_name), color=color)
 
 plt.xlabel("Epochs")
 plt.ylabel("Accuracy")
@@ -33,4 +33,4 @@ plt.xticks(x_ticks[::50], map(lambda x: x+50, x_ticks[::50]))
 #f.suptitle(r"Comparing different $\beta$ using the digits (0-9)")
 plt.legend(loc = 8)
 
-plt.savefig("../figs/comparing_beta.pdf")
+plt.savefig("figs/comparing_beta.pdf")

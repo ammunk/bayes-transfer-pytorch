@@ -6,7 +6,7 @@ import re
 import numpy as np
 
 def load_data(basename):
-    file = open("../results/originalallinone/logfile.txt").read()
+    file = open("results/originalallinone/logfile.txt").read()
     acc = list(map(lambda x: x.split(" ")[-1], re.findall(r"(acc: \d.\d+)", file)))
 
     print(re.findall(r"(acc: \d.\d+)", file))
@@ -46,5 +46,5 @@ f.suptitle("Accuracy after training for 50 epochs")
 plt.legend()
 
 
-plt.savefig("../figs/" + name_ext + "result.pdf")
+plt.savefig("figs/" + name_ext + "result.pdf")
 

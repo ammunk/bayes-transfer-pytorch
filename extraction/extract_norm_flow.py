@@ -7,9 +7,10 @@ import seaborn as sns
 import re
 import numpy as np
 
-plt.rc('font', family='serif', size=22)
-plt.rcParams.update({'legend.fontsize': 16, 'xtick.labelsize': 16,
-'ytick.labelsize': 16, 'axes.labelsize': 16})
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif', size=24)
+plt.rcParams.update({'legend.fontsize': 24, 'xtick.labelsize': 24,
+'ytick.labelsize': 24, 'axes.labelsize': 24})
 def load_data(basename):
     normflow = open("results/{}/diagnostics.txt".format(basename)).read()
     
@@ -31,10 +32,10 @@ for basename, color, legend in zip(basenames, colors, legends):
 
 plt.xlabel("Epochs")
 plt.ylabel("Accuracy")
-plt.xticks(x_ticks[50::50], map(lambda x: x, x_ticks[50::50]))
-f.suptitle("With and without Normalizing Flows")
+plt.xticks(x_ticks[59::60], map(lambda x: x + 1 , x_ticks[59::60]))
+#f.suptitle("With and without Normalizing Flows")
 plt.legend(loc = 8)
 
-plt.savefig("../figs/normflow.pdf")
+plt.savefig("figs/normflow.pdf")
 
 
