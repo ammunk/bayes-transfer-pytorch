@@ -36,7 +36,7 @@ for basename in ["domainB", "transfer"]:
 
 plt.xticks(x_ticks[49::50], map(lambda x: x + 1, x_ticks[49::50]))
 #f.suptitle("Evalutating transfer properties")
-first_legend= plt.legend(handles = list(map(lambda x: x[0], lgd[:3])), loc = 10, title = "Without tansfer learning", ncol = 2, bbox_to_anchor = (0.5,0.7))
+first_legend= plt.legend(handles = list(map(lambda x: x[0], lgd[:3])), loc = 10, title = "Without transfer learning", ncol = 2, bbox_to_anchor = (0.5,0.7))
 plt.gca().add_artist(first_legend)
 plt.legend(handles = list(map(lambda x: x[0], lgd[3:])), ncol = 2,loc = 8, title = "With transfer learning") 
 plt.savefig("figs/transfer_results.pdf")
