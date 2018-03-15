@@ -97,7 +97,7 @@ def domain_a():
     digits = [0,1,2,3,4]
     experiment_name = "results/domain_a"
     beta_type = "Blundell"
-    num_epochs = 600
+    num_epochs = 300
 
 
 @ex.named_config
@@ -116,7 +116,17 @@ def transfer():
     lr=1e-5
     pretrained = "results/domain_a"
     beta_type = "Blundell"
-    num_epochs = 600
+    num_epochs = 300
+
+@ex.named_config
+def forgetting():
+    digits = [0,1,2,3,4]
+    p_logvar_init = 0
+    q_logvar_init=-8
+    lr=1e-5
+    pretrained = "results/domain_b"
+    beta_type = "Blundell"
+    num_epochs = 300
 
 
 @ex.named_config
