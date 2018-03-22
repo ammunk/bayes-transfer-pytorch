@@ -19,6 +19,7 @@ data_ingredient = Ingredient("dataset")
 def cfg():
     digits = list(range(10))
     fraction = 1.0
+    rotation = 0
 
 @data_ingredient.capture
 def load_mnist(digits, fraction=1.0, rotation=0):

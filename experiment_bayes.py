@@ -122,10 +122,10 @@ def model_definition(num_output, num_hidden=100, num_layers=2, num_flows=0, pret
 
 
 @ex.automain
-def main(digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
+def main(digits=list(range(10)), fraction=1.0, rotation=0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
          num_layers=2, num_hidden=400, num_epochs=200, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
 
-    loader_train, loader_val = load_mnist(digits, fraction)
+    loader_train, loader_val = load_mnist(digits, fraction, rotation)
 
     model = model_definition(len(digits), num_hidden=num_hidden, num_layers=num_layers, num_flows=num_flows, pretrained=pretrained, p_logvar_init=p_logvar_init, q_logvar_init=q_logvar_init)
 
