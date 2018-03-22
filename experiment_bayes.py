@@ -26,20 +26,69 @@ def normflow():
 
 @ex.named_config
 def domain_a():
-    digits = [0,1,2,3,4]
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
+    rotation = 0
 
 
 @ex.named_config
-def domain_b():
-    digits = [5,6,7,8,9]
+# do this first and see if val acc is high
+def transfer_b():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up tp 15° randomly rotated
     beta_type = "Blundell"
+    pretrained = "results/domain_a"
+    rotation = 15
 
 
 @ex.named_config
-def transfer():
-    digits = [5,6,7,8,9]
+# do this second and see if network can remember domain a
+def forgetting_b():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
+    pretrained = "results/domain_a"
+    rotation = 0
+    # add argument for not training again, only validate
+    is_training = False
+
+
+@ex.named_config
+# do this first and see if val acc is high
+def transfer_c():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 30° randomly rotated
+    beta_type = "Blundell"
+    pretrained = "results/transfer_b"
+    rotation = 30
+
+
+@ex.named_config
+# do this second and see if network can remember domain b
+def forgetting_c():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 15°
+    beta_type = "Blundell"
+    pretrained = "results/transfer_b"
+    rotation = 15   # includes not rotated
+    # add argument for not training again, only validate
+    is_training = False
+
+
+@ex.named_config
+# do this first and see if val acc is high
+def transfer_d():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 45° randomly rotated
+    beta_type = "Blundell"
+    pretrained = "results/transfer_c"
+    rotation = 45
+
+
+@ex.named_config
+# do this second and see if network can remember domain c
+def forgetting_d():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 30°
+    beta_type = "Blundell"
+    pretrained = "results/transfer_c"
+    rotation = 30   # includes not rotated and up to 15°
+    # add argument for not training again, only validate
+    is_training = False
 
 
 @ex.named_config
@@ -74,7 +123,7 @@ def model_definition(num_output, num_hidden=100, num_layers=2, num_flows=0, pret
 
 @ex.automain
 def main(digits=list(range(10)), fraction=1.0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
-         num_layers=2, num_hidden=400, num_epochs=600, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
+         num_layers=2, num_hidden=400, num_epochs=200, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
 
     loader_train, loader_val = load_mnist(digits, fraction)
 
