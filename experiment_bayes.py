@@ -26,53 +26,70 @@ def normflow():
 
 @ex.named_config
 def domain_a():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
+    rotation = 0
 
 
 @ex.named_config
+# do this first and see if val acc is high
 def transfer_b():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up tp 15 randomly rotated
     beta_type = "Blundell"
-    pretrained = "results/domain_a"
+    pretrained = "bayes-experiments/1"	 # take the weights after training domain A
     rotation = 15
 
 
 @ex.named_config
+# do this second and see if network can remember domain A
 def forgetting_b():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
-    pretrained = "results/domain_a"
+    pretrained = "bayes-experiments/2"	 # take the weights after training A and B
+    rotation = 0
+    # add argument for not training again, only validate
     is_training = False
 
 
 @ex.named_config
+# do this first and see if val acc is high
 def transfer_c():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 30 randomly rotated
     beta_type = "Blundell"
-    pretrained = "results/transfer_b"
+    pretrained = "bayes-experiments/3"	 # take the weights after training A and B
     rotation = 30
 
 
 @ex.named_config
+# do this second and see if network can remember domain B
 def forgetting_c():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 15
     beta_type = "Blundell"
-    pretrained = "results/transfer_b"
+    pretrained = "bayes-experiments/4"	 # take the weights after training A, B, and C
     rotation = 15   # includes not rotated
     # add argument for not training again, only validate
     is_training = False
 
 
 @ex.named_config
+# do this first and see if val acc is high
 def transfer_d():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 45 randomly rotated
     beta_type = "Blundell"
-    pretrained = "results/transfer_c"
+    pretrained = "bayes-experiments/5"	 # take the weights after training A, B, and C
     rotation = 45
 
 
 @ex.named_config
+# do this second and see if network can remember domain C
 def forgetting_d():
+    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 30
     beta_type = "Blundell"
-    pretrained = "results/transfer_c"
+    pretrained = "bayes-experiments/6"	 # take the weights after training A, B, C, and D
     rotation = 30   # includes not rotated and up to 15°
     # add argument for not training again, only validate
     is_training = False
+
 
 
 @ex.named_config
@@ -106,7 +123,7 @@ def model_definition(num_output, num_hidden=100, num_layers=2, num_flows=0, pret
 
 
 @ex.automain
-def main(digits=list(range(10)), fraction=1.0, rotation=0, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
+def main(digits=list(range(10)), fraction=1.0, rotation=0, is_training=True, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
          num_layers=2, num_hidden=400, num_epochs=200, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
 
     loader_train, loader_val = load_mnist(digits, fraction, rotation)
@@ -170,14 +187,14 @@ def main(digits=list(range(10)), fraction=1.0, rotation=0, pretrained=None, num_
         return diagnostics
 
     for epoch in range(num_epochs):
-        diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
-        diagnostics_val = run_epoch(loader_val, epoch)
-
-        diagnostics_train = dict({"type": "train", "epoch": epoch}, **diagnostics_train)
-        diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
-
-        print(diagnostics_train)
-        print(diagnostics_val)
+        if is_training is True:
+            diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
+            diagnostics_train = dict({"type": "train", "epoch": epoch}, **diagnostics_train)
+            print(diagnostics_train)
+        else:
+            diagnostics_val = run_epoch(loader_val, epoch)
+            diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
+            print(diagnostics_val)
 
         if epoch == num_epochs-1:
             weightsfile = os.path.join(observer.dir, 'weights.pkl')
