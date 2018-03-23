@@ -135,7 +135,7 @@ def main(digits=list(range(10)), fraction=1.0, rotation=0, pretrained=None, num_
     if cuda:
         model.cuda()
 
-    def run_epoch(loader, epoch, is_training=False):
+    def run_epoch(loader, epoch, is_training=True):
         m = math.ceil(len(loader.dataset) / loader.batch_size)
 
         accuracies = []
