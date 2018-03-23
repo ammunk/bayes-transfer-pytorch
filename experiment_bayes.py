@@ -48,7 +48,7 @@ def forgetting_b():
     pretrained = "results/domain_a"
     rotation = 0
     # add argument for not training again, only validate
-    training = False
+    is_training = False
 
 
 @ex.named_config
@@ -68,7 +68,7 @@ def forgetting_c():
     pretrained = "results/transfer_b"
     rotation = 15   # includes not rotated
     # add argument for not training again, only validate
-    training = False
+    is_training = False
 
 
 @ex.named_config
@@ -88,7 +88,7 @@ def forgetting_d():
     pretrained = "results/transfer_c"
     rotation = 30   # includes not rotated and up to 15°
     # add argument for not training again, only validate
-    training = False
+    is_training = False
 
 
 @ex.named_config
@@ -122,7 +122,7 @@ def model_definition(num_output, num_hidden=100, num_layers=2, num_flows=0, pret
 
 
 @ex.automain
-def main(digits=list(range(10)), fraction=1.0, rotation=0, training=True, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
+def main(digits=list(range(10)), fraction=1.0, rotation=0, is_training=True, pretrained=None, num_samples=10, num_flows=0, beta_type="Blundell",
          num_layers=2, num_hidden=400, num_epochs=200, p_logvar_init = 0, q_logvar_init=-8, lr=1e-5):
 
     loader_train, loader_val = load_mnist(digits, fraction, rotation)
@@ -186,17 +186,11 @@ def main(digits=list(range(10)), fraction=1.0, rotation=0, training=True, pretra
         return diagnostics
 
     for epoch in range(num_epochs):
-        if training is True:
+        if is_training is True:
             diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
-            diagnostics_val = run_epoch(loader_val, epoch)
-
             diagnostics_train = dict({"type": "train", "epoch": epoch}, **diagnostics_train)
-            diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
-
             print(diagnostics_train)
-            print(diagnostics_val)
-
-        elif training is False:
+        else:
             diagnostics_val = run_epoch(loader_val, epoch)
             diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
             print(diagnostics_val)
