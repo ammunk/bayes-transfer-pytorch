@@ -15,11 +15,14 @@ from sacred import Ingredient
 
 data_ingredient = Ingredient("dataset")
 
+
 @data_ingredient.config
 def cfg():
     digits = list(range(10))
     fraction = 1.0
     rotation = 0
+    training=True
+
 
 @data_ingredient.capture
 def load_mnist(digits, fraction=1.0, rotation=0):
@@ -31,32 +34,36 @@ def load_mnist(digits, fraction=1.0, rotation=0):
                                         transforms.Lambda(lambda x: x.view(28**2))
                                         ])
 
-    if rotation is 15:
+    elif rotation is 15:
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
                                         transforms.Lambda(lambda x: x.view(28 ** 2)),
                                         a_transforms.Rotate(15)
                                         ])
 
-    if rotation is 30:
+    elif rotation is 30:
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
                                         transforms.Lambda(lambda x: x.view(28 ** 2)),
                                         a_transforms.Rotate(30)
                                         ])
 
-    if rotation is 45:
+    elif rotation is 45:
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
                                         transforms.Lambda(lambda x: x.view(28 ** 2)),
                                         a_transforms.Rotate(45)
                                         ])
 
+    else:
+        print('Choose rotation = 15, 30, or 45')
+        pass
+
     mnist_train = MNIST(root="./", download=True, transform=transform,
                         target_transform=target_transform)
     mnist_valid = MNIST(root="./", train=False, download=True, transform=transform,
-                        target_transform=target_transform)    
-      
+                        target_transform=target_transform)
+
     def get_sampler(labels, n=None):
         # Only choose digits in n_labels
         (indices,) = np.where(reduce(__or__, [labels == i for i in digits]))
