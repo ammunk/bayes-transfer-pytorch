@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import transforms
 from torchvision.datasets import MNIST
-from torchsample.torchsample.transforms import affine_transforms as a_transforms
+
 
 cuda = torch.cuda.is_available()
 
@@ -22,6 +22,7 @@ def cfg():
     fraction = 1.0
     rotation = 0
     training=True
+    pretrained=None
 
 
 @data_ingredient.capture
@@ -35,35 +36,35 @@ def load_mnist(digits, fraction=1.0, rotation=0):
                                         ])
 
     elif rotation is 15:
-        transform = transforms.Compose([transforms.ToTensor(),
+        transform = transforms.Compose([transforms.RandomRotation(15),
+                                        transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
-                                        transforms.Lambda(lambda x: x.view(28 ** 2)),
-                                        a_transforms.Rotate(15)
+                                        transforms.Lambda(lambda x: x.view(28 ** 2))
                                         ])
 
     elif rotation is 30:
-        transform = transforms.Compose([transforms.ToTensor(),
+        transform = transforms.Compose([transforms.RandomRotation(30),
+                                        transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
-                                        transforms.Lambda(lambda x: x.view(28 ** 2)),
-                                        a_transforms.Rotate(30)
+                                        transforms.Lambda(lambda x: x.view(28 ** 2))
                                         ])
 
     elif rotation is 45:
-        transform = transforms.Compose([transforms.ToTensor(),
+        transform = transforms.Compose([transforms.RandomRotation(45),
+                                        transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,)),
-                                        transforms.Lambda(lambda x: x.view(28 ** 2)),
-                                        a_transforms.Rotate(45)
+                                        transforms.Lambda(lambda x: x.view(28 ** 2))
                                         ])
 
     else:
-        print('Choose rotation = 15, 30, or 45')
+        print('Choose rotation = 0, 15, 30, or 45')
         pass
 
     mnist_train = MNIST(root="./", download=True, transform=transform,
                         target_transform=target_transform)
     mnist_valid = MNIST(root="./", train=False, download=True, transform=transform,
-                        target_transform=target_transform)
-
+                        target_transform=target_transform)    
+      
     def get_sampler(labels, n=None):
         # Only choose digits in n_labels
         (indices,) = np.where(reduce(__or__, [labels == i for i in digits]))
