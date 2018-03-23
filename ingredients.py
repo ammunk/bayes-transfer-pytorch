@@ -25,7 +25,6 @@ def cfg():
 @data_ingredient.capture
 def load_mnist(digits, fraction=1.0, rotation=0):
     target_transform = lambda x: {str(digit): k for digit, k in zip(digits, range(len(digits)))}[str(int(x))]
-
     transform = transforms.Compose([transforms.RandomRotation([rotation, rotation]),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.1307,), (0.3081,)),
@@ -34,8 +33,8 @@ def load_mnist(digits, fraction=1.0, rotation=0):
     mnist_train = MNIST(root="./", download=True, transform=transform,
                         target_transform=target_transform)
     mnist_valid = MNIST(root="./", train=False, download=True, transform=transform,
-                        target_transform=target_transform)
-
+                        target_transform=target_transform)    
+      
     def get_sampler(labels, n=None):
         # Only choose digits in n_labels
         (indices,) = np.where(reduce(__or__, [labels == i for i in digits]))
