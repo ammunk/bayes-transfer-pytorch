@@ -26,44 +26,32 @@ def normflow():
 
 @ex.named_config
 def domain_a():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
-    rotation = 0
 
 
 @ex.named_config
-# do this first and see if val acc is high
 def transfer_b():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up tp 15° randomly rotated
     beta_type = "Blundell"
     pretrained = "results/domain_a"
     rotation = 15
 
 
 @ex.named_config
-# do this second and see if network can remember domain a
 def forgetting_b():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
     beta_type = "Blundell"
     pretrained = "results/domain_a"
-    rotation = 0
-    # add argument for not training again, only validate
     is_training = False
 
 
 @ex.named_config
-# do this first and see if val acc is high
 def transfer_c():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 30° randomly rotated
     beta_type = "Blundell"
     pretrained = "results/transfer_b"
     rotation = 30
 
 
 @ex.named_config
-# do this second and see if network can remember domain b
 def forgetting_c():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 15°
     beta_type = "Blundell"
     pretrained = "results/transfer_b"
     rotation = 15   # includes not rotated
@@ -72,18 +60,14 @@ def forgetting_c():
 
 
 @ex.named_config
-# do this first and see if val acc is high
 def transfer_d():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 45° randomly rotated
     beta_type = "Blundell"
     pretrained = "results/transfer_c"
     rotation = 45
 
 
 @ex.named_config
-# do this second and see if network can remember domain c
 def forgetting_d():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 30°
     beta_type = "Blundell"
     pretrained = "results/transfer_c"
     rotation = 30   # includes not rotated and up to 15°
