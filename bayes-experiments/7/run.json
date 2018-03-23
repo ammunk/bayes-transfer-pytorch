@@ -1,0 +1,106 @@
+{
+  "artifacts": [],
+  "command": "main",
+  "experiment": {
+    "base_dir": "/home/adllo/PycharmProjects/project15",
+    "dependencies": [
+      "numpy==1.14.0",
+      "sacred==0.7.2",
+      "torch==0.3.1.post2",
+      "torchvision==0.2.0"
+    ],
+    "mainfile": "experiment_bayes.py",
+    "name": "Bayesian Deep Transfer Learning",
+    "repositories": [],
+    "sources": [
+      [
+        "bayesian_transfer/__init__.py",
+        "_sources/__init___b545ef3139ef28f68a5b022959e34543.py"
+      ],
+      [
+        "bayesian_transfer/layers.py",
+        "_sources/layers_243c38f7c8ce378d257c661b5e1c43f6.py"
+      ],
+      [
+        "bayesian_transfer/models.py",
+        "_sources/models_247cb08e60bc84b6a081fe37c2f1ce6e.py"
+      ],
+      [
+        "experiment_bayes.py",
+        "_sources/experiment_bayes_f0f03abaf9ae0de935729bbae5bc00bb.py"
+      ],
+      [
+        "ingredients.py",
+        "_sources/ingredients_45a1efbce7eeb74283dbf1b72177f602.py"
+      ]
+    ]
+  },
+  "fail_trace": [
+    "Traceback (most recent call last):\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/config/captured_function.py\", line 48, in captured_function\n    result = wrapped(*args, **kwargs)\n",
+    "  File \"experiment_bayes.py\", line 206, in main\n    ex.add_artifact(weightsfile)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/experiment.py\", line 332, in add_artifact\n    self.current_run.add_artifact(filename, name)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/run.py\", line 185, in add_artifact\n    self._emit_artifact_added(name, filename)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/run.py\", line 394, in _emit_artifact_added\n    filename=filename)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/run.py\", line 399, in _safe_call\n    getattr(obs, method)(**kwargs)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/observers/file_storage.py\", line 207, in artifact_event\n    self.save_file(filename, name)\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/site-packages/sacred/observers/file_storage.py\", line 151, in save_file\n    copyfile(filename, os.path.join(self.dir, target_name))\n",
+    "  File \"/home/adllo/anaconda3/lib/python3.6/shutil.py\", line 104, in copyfile\n    raise SameFileError(\"{!r} and {!r} are the same file\".format(src, dst))\n",
+    "shutil.SameFileError: '/home/adllo/PycharmProjects/project15/bayes-experiments/7/weights.pkl' and 'bayes-experiments/7/weights.pkl' are the same file\n"
+  ],
+  "heartbeat": "2018-03-23T11:26:26.953506",
+  "host": {
+    "ENV": {},
+    "cpu": "Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz",
+    "gpus": {
+      "driver_version": "387.34",
+      "gpus": [
+        {
+          "model": "GeForce GTX 1080",
+          "persistence_mode": false,
+          "total_memory": 8112
+        }
+      ]
+    },
+    "hostname": "adllo",
+    "os": [
+      "Linux",
+      "Linux-4.13.0-36-generic-x86_64-with-debian-stretch-sid"
+    ],
+    "python_version": "3.6.4"
+  },
+  "meta": {
+    "command": "main",
+    "options": {
+      "--beat_interval": null,
+      "--capture": null,
+      "--comment": null,
+      "--debug": false,
+      "--enforce_clean": false,
+      "--file_storage": null,
+      "--force": false,
+      "--help": false,
+      "--loglevel": null,
+      "--mongo_db": null,
+      "--name": null,
+      "--pdb": false,
+      "--print_config": false,
+      "--priority": null,
+      "--queue": false,
+      "--sql": null,
+      "--tiny_db": null,
+      "--unobserved": false,
+      "COMMAND": null,
+      "UPDATE": [
+        "forgetting_d"
+      ],
+      "help": false,
+      "with": true
+    }
+  },
+  "resources": [],
+  "result": null,
+  "start_time": "2018-03-23T11:24:36.874110",
+  "status": "FAILED",
+  "stop_time": "2018-03-23T11:26:29.907540"
+}

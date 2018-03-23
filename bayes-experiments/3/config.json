@@ -1,0 +1,37 @@
+{
+  "beta_type": "Blundell",
+  "dataset": {
+    "digits": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "fraction": 1.0,
+    "pretrained": null,
+    "rotation": 0,
+    "training": true
+  },
+  "digits": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "pretrained": "bayes-experiments/2",
+  "rotation": 0,
+  "seed": 953913132,
+  "training": false
+}
