@@ -189,8 +189,11 @@ def main(digits=list(range(10)), fraction=1.0, rotation=0, is_training=True, pre
     for epoch in range(num_epochs):
         if is_training is True:
             diagnostics_train = run_epoch(loader_train, epoch, is_training=True)
+            diagnostics_val = run_epoch(loader_val, epoch)
             diagnostics_train = dict({"type": "train", "epoch": epoch}, **diagnostics_train)
+            diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
             print(diagnostics_train)
+            print(diagnostics_val)
         else:
             diagnostics_val = run_epoch(loader_val, epoch)
             diagnostics_val = dict({"type": "validation", "epoch": epoch}, **diagnostics_val)
