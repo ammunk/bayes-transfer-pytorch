@@ -34,16 +34,16 @@ def domain_a():
 @ex.named_config
 # do this first and see if val acc is high
 def transfer_b():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up tp 15 randomly rotated
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/1"	 # take the weights after training domain A
-    rotation = 15
+    rotation = 0
 
 
 @ex.named_config
 # do this second and see if network can remember domain A
 def forgetting_b():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/2"	 # take the weights after training A and B
     rotation = 0
@@ -54,19 +54,19 @@ def forgetting_b():
 @ex.named_config
 # do this first and see if val acc is high
 def transfer_c():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 30 randomly rotated
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/3"	 # take the weights after training A and B
-    rotation = 30
+    rotation = 0
 
 
 @ex.named_config
 # do this second and see if network can remember domain B
 def forgetting_c():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 15
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/4"	 # take the weights after training A, B, and C
-    rotation = 15   # includes not rotated
+    rotation = 0
     # add argument for not training again, only validate
     is_training = False
 
@@ -74,19 +74,19 @@ def forgetting_c():
 @ex.named_config
 # do this first and see if val acc is high
 def transfer_d():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # up to 45 randomly rotated
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/5"	 # take the weights after training A, B, and C
-    rotation = 45
+    rotation = 0
 
 
 @ex.named_config
 # do this second and see if network can remember domain C
 def forgetting_d():
-    digits = [0,1,2,3,4,5,6,7,8,9]  # not rotated and randomly up to 30
+    digits = [0,1,2,3,4,5,6,7,8,9]
     beta_type = "Blundell"
     pretrained = "bayes-experiments/6"	 # take the weights after training A, B, C, and D
-    rotation = 30   # includes not rotated and up to 15°
+    rotation = 0
     # add argument for not training again, only validate
     is_training = False
 
