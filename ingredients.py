@@ -1,6 +1,5 @@
 from functools import reduce
 from operator import __or__
-import os
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -20,13 +19,15 @@ def cfg():
     digits = list(range(10))
     fraction = 1.0
     rotation = 0
+    noise = 0
 
 
 @data_ingredient.capture
-def load_mnist(digits, fraction=1.0, rotation=0):
+def load_mnist(digits, fraction=1.0, rotation=0, noise=0):
     target_transform = lambda x: {str(digit): k for digit, k in zip(digits, range(len(digits)))}[str(int(x))]
     transform = transforms.Compose([transforms.RandomRotation([rotation, rotation]),
                                     transforms.ToTensor(),
+                                    transforms.Lambda(lambda x: x + noise * torch.randn(x.size())),
                                     transforms.Normalize((0.1307,), (0.3081,)),
                                     transforms.Lambda(lambda x: x.view(28**2))])
 

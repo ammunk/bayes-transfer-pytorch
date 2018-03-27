@@ -27,7 +27,7 @@ def domain_B():
 
 @ex.named_config
 def transfer_A_B():
-    pretrained = "ewc-experiments/12"
+    pretrained = "ewc-experiments/3"
     digits = [5, 6, 7, 8, 9]
     lambd = 5.
 
@@ -58,14 +58,12 @@ def model_definition(digits=(1,), pretrained=None):
 def main(digits=(1,), lambd=0.0, pretrained=None, num_epochs=101, lr=3e-4):
     if pretrained is not None:
         import json
-
-        pretrained = os.path.join(pretrained, "weights.pkl")
         model = model_definition(digits, pretrained)
 
         # Load the configuration for the digits
         # of the previous exoeriment.
-        pre_digits = json.load(open(os.path.join(pretrained, "config.json")))["digits"]
-        loader, _ = load_mnist(pre_digits)
+        config = json.load(open(os.path.join(pretrained, "config.json")))
+        loader, _ = load_mnist(config["digits"])
 
         if cuda: model.cuda()
         ewc = ElasticWeightConsolidation(model).calculate_fisher(loader)
